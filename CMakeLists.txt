@@ -7,8 +7,15 @@ set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
+add_executable(oglpractice
+    src/main.cpp
+)
+
+#target_include_directories(consumerApp PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include)
+
 # OpenGL
 find_package(OpenGL REQUIRED)
+target_link_libraries(oglpractice PRIVATE OpenGL::GL)
 
 # FetchContent
 include(FetchContent)
@@ -20,6 +27,7 @@ FetchContent_Declare(
     GIT_TAG latest
 )
 FetchContent_MakeAvailable(glfw)
+target_link_libraries(oglpractice PRIVATE glfw)
 
 # GLAD 2
 FetchContent_Declare(
@@ -43,12 +51,4 @@ glad_add_library(
     API gl:core=4.6
 )
 
-add_executable(oglpractice
-    src/main.cpp
-)
-
-target_link_libraries(oglpractice PRIVATE
-    glfw
-    glad_gl_core_46
-    OpenGL::GL
-)
+target_link_libraries(oglpractice PRIVATE glad_gl_core_46)
