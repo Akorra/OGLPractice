@@ -95,11 +95,13 @@ int main()
 
     // rect geometry in normalized device coordinates, ndc, with x, y, z being [-1.0f, 1.0f]
     float vertices[] = {
-        0.5f,  0.5f, 0.0f,  // top right
-        0.5f, -0.5f, 0.0f,  // bottom right
-        -0.5f, -0.5f, 0.0f,  // bottom left
-        -0.5f,  0.5f, 0.0f   // top left 
+        0.5f,  0.5f, 0.0f,  1.0f, 0.0f, 0.0f, // top right     (red)
+        0.5f, -0.5f, 0.0f,  0.0f, 1.0f, 0.0f, // bottom right  (green)
+        -0.5f, -0.5f, 0.0f, 0.0f, 0.0f, 1.0f, // bottom left   (blue)
+        -0.5f,  0.5f, 0.0f, 1.0f, 1.0f, 0.0f  // top left      (yellow)
     };
+    // adding color attribute the rasterizer performs fragment interpolation in fragment shader
+
     unsigned int indices[] = {  // note that we start from 0!
         0, 1, 3,   // first triangle
         1, 2, 3    // second triangle
@@ -131,9 +133,9 @@ int main()
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
     
     // our data is tightly packed, first value at 0, only position data:
-    // x1,y1,z1,x2,y2,z2,x3,y3,z3,x4,y4,z4,x5,y5,z5,...,xN,yN,zN 
+    // x1,y1,z1,r1,g1,b1,x2,y2,z2,r2,g2,b2,...,xN,yN,zN,rN,gN,bN 
     //  - each position data is a 32-bit (4 byte) float
-    //  - each position is composed of 3 values (x, y, z)
+    //  - each position is composed of 6 values (x, y, z) + (r, b, b)
 
     // Args:
     //  - layout position (vertex attribute we want to configure)
@@ -142,8 +144,12 @@ int main()
     //  - normalize data ???
     //  - stride - space between consecutive vertex attributes -> x,y,z tightly packed -> 3*sizeof(float) or 0 to let opengl determine it (possible for tightly packed data)
     //  - offset - where position data begins in the buffer
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0); 
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0); 
     glEnableVertexAttribArray(0); // enable vertex attribute at layout 0
+
+    // color attribute - same as before but at layout 1 with offset acounting for (x,y,z)
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3* sizeof(float)));
+    glEnableVertexAttribArray(1);
 
     // note that this is allowed, the call to glVertexAttribPointer registered VBO as the vertex attribute's bound vertex buffer object so afterwards we can safely unbind
     glBindBuffer(GL_ARRAY_BUFFER, 0);
@@ -168,12 +174,14 @@ int main()
         // draw our first triangle
         glUseProgram(shaderProgram);
 
+        // set uniforms ------------------------------------------------------------------------------------------------------------------
         // update the uniform color - uniforms allow us to pass data from our application on the CPU to the shaders on the GPU
         float timeValue = glfwGetTime();
         float greenValue = sin(timeValue) / 2.0f + 0.5f;
         int   vertexColorLocation = glGetUniformLocation(shaderProgram, "ourColor");
         glUniform4f(vertexColorLocation, 0.0f, greenValue, 0.0f, 1.0f);
 
+        // draw -------------------------------------------------------------------------------------------------------------------------
         glBindVertexArray(vao); // seeing as we only have a single VAO there's no need to bind it every time, but we'll do so to keep things a bit more organized
         // glDrawArrays(GL_TRIANGLES, 0, 3);
         glDrawElements(GL_TRIANGLES, 6 /* indices */, GL_UNSIGNED_INT, 0);
