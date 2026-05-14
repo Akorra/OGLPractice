@@ -11,7 +11,7 @@ add_executable(oglpractice
     src/main.cpp
 )
 
-#target_include_directories(consumerApp PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include)
+target_include_directories(oglpractice PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include)
 
 # OpenGL
 find_package(OpenGL REQUIRED)
