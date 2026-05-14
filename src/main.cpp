@@ -45,12 +45,20 @@ int main()
     Shader ourShader("./shaders/simple.vs.glsl", "./shaders/simple.fs.glsl"); // you can name your shader files however you like
 
     // rect geometry in normalized device coordinates, ndc, with x, y, z being [-1.0f, 1.0f]
-    float vertices[] = {
+    /*float vertices[] = {
         0.5f,  0.5f, 0.0f,  1.0f, 0.0f, 0.0f, // top right     (red)
         0.5f, -0.5f, 0.0f,  0.0f, 1.0f, 0.0f, // bottom right  (green)
         -0.5f, -0.5f, 0.0f, 0.0f, 0.0f, 1.0f, // bottom left   (blue)
         -0.5f,  0.5f, 0.0f, 1.0f, 1.0f, 0.0f  // top left      (yellow)
     };
+    /**/
+    float vertices[] = {
+    // positions         // colors
+     0.5f, -0.5f, 0.0f,  1.0f, 0.0f, 0.0f,   // bottom right
+    -0.5f, -0.5f, 0.0f,  0.0f, 1.0f, 0.0f,   // bottom left
+     0.0f,  0.5f, 0.0f,  0.0f, 0.0f, 1.0f    // top 
+    };/**/
+
     // adding color attribute the rasterizer performs fragment interpolation in fragment shader
 
     unsigned int indices[] = {  // note that we start from 0!
@@ -80,8 +88,8 @@ int main()
     glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW); //< copy vertex data to bound buffer memory 
 
     // now for ebo
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
+    //glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
+    //glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
     
     // our data is tightly packed, first value at 0, only position data:
     // x1,y1,z1,r1,g1,b1,x2,y2,z2,r2,g2,b2,...,xN,yN,zN,rN,gN,bN 
@@ -127,13 +135,13 @@ int main()
         // set uniforms ------------------------------------------------------------------------------------------------------------------
         // update the uniform color - uniforms allow us to pass data from our application on the CPU to the shaders on the GPU
         float timeValue = glfwGetTime();
-        float greenValue = sin(timeValue) / 2.0f + 0.5f;
-        ourShader.set4Float("ourColor", 0.0f, greenValue, 0.0f, 1.0f);
+        float variance  = sin(timeValue) / 2.0f + 0.5f;
+        ourShader.setFloat("variance", variance);
 
         // draw -------------------------------------------------------------------------------------------------------------------------
         glBindVertexArray(vao); // seeing as we only have a single VAO there's no need to bind it every time, but we'll do so to keep things a bit more organized
-        // glDrawArrays(GL_TRIANGLES, 0, 3);
-        glDrawElements(GL_TRIANGLES, 6 /* indices */, GL_UNSIGNED_INT, 0);
+        glDrawArrays(GL_TRIANGLES, 0, 3);
+        //glDrawElements(GL_TRIANGLES, 6 /* indices */, GL_UNSIGNED_INT, 0);
         // glBindVertexArray(0); // no need to unbind it every time
 
         // glfw: swap buffers and poll IO events (keys pressed/released, mouse moved etc.)
