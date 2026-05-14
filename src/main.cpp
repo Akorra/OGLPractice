@@ -86,21 +86,27 @@ int main()
     glDeleteShader(vertexShader);
     glDeleteShader(fragmentShader);
 
-    // triangle geometry in normalized device coordinates, ndc, with x, y, z being [-1.0f, 1.0f]
+    // rect geometry in normalized device coordinates, ndc, with x, y, z being [-1.0f, 1.0f]
     float vertices[] = {
-        -0.5f, -0.5f, 0.0f, // left  
-         0.5f, -0.5f, 0.0f, // right 
-         0.0f,  0.5f, 0.0f  // top   
+        0.5f,  0.5f, 0.0f,  // top right
+        0.5f, -0.5f, 0.0f,  // bottom right
+        -0.5f, -0.5f, 0.0f,  // bottom left
+        -0.5f,  0.5f, 0.0f   // top left 
+    };
+    unsigned int indices[] = {  // note that we start from 0!
+        0, 1, 3,   // first triangle
+        1, 2, 3    // second triangle
     };
 
-    unsigned int vbo, vao;
+    unsigned int vbo, vao, ebo;
     // vao stores:
     //  - calls to glEnableVertexAttribArray or glDisableVertexAttribArray
     //  - Vertex attribute configurations via glVertexAttribPointer
     //  - Vertex buffer objects associated with vertex attributes by calls to glVertexAttribPointer.
     glGenVertexArrays(1, &vao); //< generate vao (stores vertex attribute calls)
     glGenBuffers(1, &vbo); //< generate object buffer
-
+    glGenBuffers(1, &ebo); //< element bufferobject, stores indices that OpenGL uses to decide what vertices to draw -indexed drawing
+    
     glBindVertexArray(vao);
     glBindBuffer(GL_ARRAY_BUFFER, vbo); //< bind it to GL_ARRAY_BUFFER target (vertex buffer object)
 
@@ -112,6 +118,10 @@ int main()
     //  GL_STATIC_DRAW  -> data set once, used many times.
     //  GL_DYNAMIC_DRAW -> data changes and is used many times. 
     glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW); //< copy vertex data to bound buffer memory 
+
+    // now for ebo
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
     
     // our data is tightly packed, first value at 0, only position data:
     // x1,y1,z1,x2,y2,z2,x3,y3,z3,x4,y4,z4,x5,y5,z5,...,xN,yN,zN 
@@ -135,6 +145,9 @@ int main()
     // VAOs requires a call to glBindVertexArray anyways so we generally don't unbind VAOs (nor VBOs) when it's not directly necessary.
     glBindVertexArray(0);
 
+    // wireframe (incomment):
+    // glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+
     // render loop ------------------------------------------------------------------------------------------------------------------
     while (!glfwWindowShouldClose(window))
     {
@@ -148,7 +161,8 @@ int main()
         // draw our first triangle
         glUseProgram(shaderProgram);
         glBindVertexArray(vao); // seeing as we only have a single VAO there's no need to bind it every time, but we'll do so to keep things a bit more organized
-        glDrawArrays(GL_TRIANGLES, 0, 3);
+        // glDrawArrays(GL_TRIANGLES, 0, 3);
+        glDrawElements(GL_TRIANGLES, 6 /* indices */, GL_UNSIGNED_INT, 0);
         // glBindVertexArray(0); // no need to unbind it every time
 
         // glfw: swap buffers and poll IO events (keys pressed/released, mouse moved etc.)
@@ -160,6 +174,7 @@ int main()
     // ------------------------------------------------------------------------
     glDeleteVertexArrays(1, &vao);
     glDeleteBuffers(1, &vbo);
+    glDeleteBuffers(1, &ebo);
     glDeleteProgram(shaderProgram);
 
     // glfw: terminate, clearing all previously allocated GLFW resources.
