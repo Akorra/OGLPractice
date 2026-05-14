@@ -1,9 +1,7 @@
-#include <glad/gl.h>
-#include <GLFW/glfw3.h>
-
 #include <iostream>
 
 #include "shaders.hpp"
+#include <GLFW/glfw3.h>
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 void processInput(GLFWwindow *window);
@@ -43,55 +41,8 @@ int main()
         return -1;
     }    
 
-    // vertex shader -------------------------------------------------------------------------------------------------
-    std::string vertexCode         = loadShaderSource("./shaders/simple.vs.glsl");
-    const char* vertexShaderSource = vertexCode.c_str();
-
-    unsigned int vertexShader = glCreateShader(GL_VERTEX_SHADER);
-    glShaderSource(vertexShader, 1, &vertexShaderSource, NULL); // shader object, number of strings, shader code 
-    glCompileShader(vertexShader);
-
-    // check for shader compile errors
-    int success;
-    char infoLog[512];
-    glGetShaderiv(vertexShader, GL_COMPILE_STATUS, &success);
-    if (!success)
-    {
-        glGetShaderInfoLog(vertexShader, 512, NULL, infoLog);
-        std::cout << "ERROR::SHADER::VERTEX::COMPILATION_FAILED\n" << infoLog << std::endl;
-    }
-
-    // fragment shader -----------------------------------------------------------------------------------------------
-    std::string fragmentCode         = loadShaderSource("./shaders/simple.fs.glsl");
-    const char* fragmentShaderSource = fragmentCode.c_str();
-
-    unsigned int fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
-    glShaderSource(fragmentShader, 1, &fragmentShaderSource, NULL);
-    glCompileShader(fragmentShader);
-    // check for shader compile errors
-    glGetShaderiv(fragmentShader, GL_COMPILE_STATUS, &success);
-    if (!success)
-    {
-        glGetShaderInfoLog(fragmentShader, 512, NULL, infoLog);
-        std::cout << "ERROR::SHADER::FRAGMENT::COMPILATION_FAILED\n" << infoLog << std::endl;
-    }
-
-    // Shader Program Object ---------------------------------------------------------------------------------------
-    // Now we link the compiled shaders to a shader program object and activate it for rendering by calling glUseProgram(shaderProgram)
-    unsigned int shaderProgram = glCreateProgram();
-    glAttachShader(shaderProgram, vertexShader);    //< attach vertex shader
-    glAttachShader(shaderProgram, fragmentShader);  //< attach fragment shader
-    glLinkProgram(shaderProgram);                   //< finalize by linkinking them
-
-    glGetProgramiv(shaderProgram, GL_LINK_STATUS, &success);
-    if (!success) {
-        glGetProgramInfoLog(shaderProgram, 512, NULL, infoLog);
-        std::cout << "ERROR::SHADER::PROGRAM::LINKING_FAILED\n" << infoLog << std::endl;
-    }
-
-    // shader objects are linked to program so we no longer need them 
-    glDeleteShader(vertexShader);
-    glDeleteShader(fragmentShader);
+    // build and compile our shader program
+    Shader ourShader("./shaders/simple.vs.glsl", "./shaders/simple.fs.glsl"); // you can name your shader files however you like
 
     // rect geometry in normalized device coordinates, ndc, with x, y, z being [-1.0f, 1.0f]
     float vertices[] = {
@@ -171,15 +122,13 @@ int main()
         glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT);
 
-        // draw our first triangle
-        glUseProgram(shaderProgram);
+        ourShader.use();
 
         // set uniforms ------------------------------------------------------------------------------------------------------------------
         // update the uniform color - uniforms allow us to pass data from our application on the CPU to the shaders on the GPU
         float timeValue = glfwGetTime();
         float greenValue = sin(timeValue) / 2.0f + 0.5f;
-        int   vertexColorLocation = glGetUniformLocation(shaderProgram, "ourColor");
-        glUniform4f(vertexColorLocation, 0.0f, greenValue, 0.0f, 1.0f);
+        ourShader.set4Float("ourColor", 0.0f, greenValue, 0.0f, 1.0f);
 
         // draw -------------------------------------------------------------------------------------------------------------------------
         glBindVertexArray(vao); // seeing as we only have a single VAO there's no need to bind it every time, but we'll do so to keep things a bit more organized
@@ -197,7 +146,6 @@ int main()
     glDeleteVertexArrays(1, &vao);
     glDeleteBuffers(1, &vbo);
     glDeleteBuffers(1, &ebo);
-    glDeleteProgram(shaderProgram);
 
     // glfw: terminate, clearing all previously allocated GLFW resources.
     glfwTerminate();

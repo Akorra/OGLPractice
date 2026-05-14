@@ -1,21 +1,30 @@
 #pragma once
 
+#include <glad/gl.h> // include glad to get all the required OpenGL headers
+  
+#include <string>
 #include <fstream>
 #include <sstream>
-#include <string>
-#include <stdexcept>
+#include <iostream>
 
-std::string loadShaderSource(const std::string& filepath)
+class Shader
 {
-    std::ifstream file(filepath);
+public:
+    // the program ID
+    unsigned int ID;
+  
+    // constructor reads and builds the shader
+    Shader(const char* vertexPath, const char* fragmentPath);
+    ~Shader();
+    
+    // use/activate the shader
+    void use();
+    // utility uniform functions
+    void setBool(const std::string &name, bool value) const;  
+    void setInt(const std::string &name, int value) const;   
+    void setFloat(const std::string &name, float value) const;
+    void set4Float(const std::string &name, float x, float y, float z, float w) const;
 
-    if (!file.is_open())
-    {
-        throw std::runtime_error("Failed to open shader file: " + filepath);
-    }
-
-    std::stringstream buffer;
-    buffer << file.rdbuf();
-
-    return buffer.str();
-}
+private:
+    void checkCompileErrors(unsigned int shader, std::string type);
+};
