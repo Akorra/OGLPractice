@@ -7,6 +7,7 @@
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 void processInput(GLFWwindow *window);
+void getVertexAttribCount(int& count);
 
 // settings
 const unsigned int SCR_WIDTH = 800;
@@ -43,6 +44,9 @@ int main()
     }    
 
     // vertex shader -------------------------------------------------------------------------------------------------
+    std::string vertexCode         = loadShaderSource("./shaders/simple.vs.glsl");
+    const char* vertexShaderSource = vertexCode.c_str();
+
     unsigned int vertexShader = glCreateShader(GL_VERTEX_SHADER);
     glShaderSource(vertexShader, 1, &vertexShaderSource, NULL); // shader object, number of strings, shader code 
     glCompileShader(vertexShader);
@@ -58,6 +62,9 @@ int main()
     }
 
     // fragment shader -----------------------------------------------------------------------------------------------
+    std::string fragmentCode         = loadShaderSource("./shaders/simple.fs.glsl");
+    const char* fragmentShaderSource = fragmentCode.c_str();
+
     unsigned int fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
     glShaderSource(fragmentShader, 1, &fragmentShaderSource, NULL);
     glCompileShader(fragmentShader);
@@ -160,6 +167,13 @@ int main()
 
         // draw our first triangle
         glUseProgram(shaderProgram);
+
+        // update the uniform color - uniforms allow us to pass data from our application on the CPU to the shaders on the GPU
+        float timeValue = glfwGetTime();
+        float greenValue = sin(timeValue) / 2.0f + 0.5f;
+        int   vertexColorLocation = glGetUniformLocation(shaderProgram, "ourColor");
+        glUniform4f(vertexColorLocation, 0.0f, greenValue, 0.0f, 1.0f);
+
         glBindVertexArray(vao); // seeing as we only have a single VAO there's no need to bind it every time, but we'll do so to keep things a bit more organized
         // glDrawArrays(GL_TRIANGLES, 0, 3);
         glDrawElements(GL_TRIANGLES, 6 /* indices */, GL_UNSIGNED_INT, 0);
@@ -195,4 +209,10 @@ void framebuffer_size_callback(GLFWwindow* window, int width, int height)
     // make sure the viewport matches the new window dimensions; note that width and 
     // height will be significantly larger than specified on retina displays.
     glViewport(0, 0, width, height);
+}
+
+void getVertexAttribCount(int& count) 
+{
+    glGetIntegerv(GL_MAX_VERTEX_ATTRIBS, &count);
+    std::cout << "Maximum nr of vertex attributes supported: " << count << std::endl; // minimum 16 4 component attributes
 }

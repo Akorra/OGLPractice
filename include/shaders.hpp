@@ -1,15 +1,21 @@
 #pragma once
 
-const char *vertexShaderSource = "#version 330 core\n"
-    "layout (location = 0) in vec3 aPos;\n"
-    "void main()\n"
-    "{\n"
-    "   gl_Position = vec4(aPos.x, aPos.y, aPos.z, 1.0);\n"
-    "}\0";
+#include <fstream>
+#include <sstream>
+#include <string>
+#include <stdexcept>
 
-const char *fragmentShaderSource = "#version 330 core\n"
-    "out vec4 FragColor;\n"
-    "void main()\n"
-    "{\n"
-    "   FragColor = vec4(1.0f, 0.5f, 0.2f, 1.0f);\n"
-    "}\n\0";
+std::string loadShaderSource(const std::string& filepath)
+{
+    std::ifstream file(filepath);
+
+    if (!file.is_open())
+    {
+        throw std::runtime_error("Failed to open shader file: " + filepath);
+    }
+
+    std::stringstream buffer;
+    buffer << file.rdbuf();
+
+    return buffer.str();
+}
