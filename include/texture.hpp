@@ -63,8 +63,11 @@
 class Texture
 {
 public:
-    Texture(const std::string& filePath)
+    Texture(const std::string& filePath, uint16_t format = GL_RGB)
     {
+        //upside-down! OpenGL expects the 0.0 coordinate on the y-axis to be on the bottom side of the image, but images usually have 0.0 at the top of the y-axis
+        stbi_set_flip_vertically_on_load(true);
+
         data = stbi_load(filePath.c_str(), &width, &height, &channels, 0);
         if(data == nullptr)
         {
@@ -90,14 +93,20 @@ public:
         //  - 0 (legacy stuff??)
         //  - format and datatype of source image
         //  - actual image data
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, format, GL_UNSIGNED_BYTE, data);
         glGenerateMipmap(GL_TEXTURE_2D); //< generate mipmaps
         
         // free imafe data:
         stbi_image_free(data);
     }
 
-    bool bind() { glBindTexture(GL_TEXTURE_2D, ID); }
+    void bind(uint16_t textureUnit = GL_TEXTURE0) 
+    { 
+        // texture units allow us to use more than 1 texture in our shaders
+        // by activating the corresponding texture unit, we can bind to multiple textures at once
+        glActiveTexture(textureUnit); // activate the texture unit first before binding texture
+        glBindTexture(GL_TEXTURE_2D, ID);
+    }
 
 private:
     int width=0, height=0, channels=0;

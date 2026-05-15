@@ -1,6 +1,7 @@
 #pragma once
 
 #include <vector>
+#include <glad/gl.h> // include glad to get all the required OpenGL headers
 
 struct Mesh
 {
@@ -121,16 +122,16 @@ struct Mesh
             glEnableVertexAttribArray(1);
         }
 
-        if(!normals.empty())
-        {
-            glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, stride * sizeof(float), (void*)(getNormalsOffset() * sizeof(float)));
-            glEnableVertexAttribArray(2);
-        }
+        //if(!normals.empty())
+        //{
+        //    glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, stride * sizeof(float), (void*)(getNormalsOffset() * sizeof(float)));
+        //    glEnableVertexAttribArray(2);
+        //}
 
         if(!st.empty())
         {
-            glVertexAttribPointer(3, 2, GL_FLOAT, GL_FALSE, stride * sizeof(float), (void*)(getStOffset() * sizeof(float)));
-            glEnableVertexAttribArray(3);
+            glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, stride * sizeof(float), (void*)(getStOffset() * sizeof(float)));
+            glEnableVertexAttribArray(2);
         }
 
         // note that this is allowed, the call to glVertexAttribPointer registered VBO as the vertex attribute's bound vertex buffer object so afterwards we can safely unbind
