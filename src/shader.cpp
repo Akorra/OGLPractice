@@ -1,4 +1,3 @@
-#include "shaders.hpp"
 #include "shader.hpp"
 
 Shader::Shader(const char *vertexPath, const char *fragmentPath)
@@ -93,11 +92,7 @@ void Shader::setFloat3(const std::string &name, float x, float y, float z) const
     glUniform3f(glGetUniformLocation(ID, name.c_str()), x, y, z);
 }
 
-void Shader::setTexture(const std::string &name, const std::string &path) const
-{
-}
-
-void Shader::set4Float(const std::string &name, float x, float y, float z, float w) const
+void Shader::setFloat4(const std::string &name, float x, float y, float z, float w) const
 {
     glUniform4f(glGetUniformLocation(ID, name.c_str()), x, y, z, w);
 }
