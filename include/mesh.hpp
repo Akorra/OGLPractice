@@ -4,6 +4,8 @@
 
 struct Mesh
 {
+    unsigned int vbo, vao, ebo;
+
     std::vector<float>      vertices;
     std::vector<float>      colors;
     std::vector<float>      normals;
@@ -11,11 +13,21 @@ struct Mesh
     std::vector<float>      cache;
     std::vector<uint32_t>   indices;
 
+    size_t getVertexCont()    const { return vertices.size() / 3; }
     size_t getStride()        const { return 3 + (colors.empty() ? 0 : 3) + (normals.empty() ? 0 : 3) + (st.empty() ? 0 : 2); }
     size_t getColorOffset()   const { return 3; }
     size_t getNormalsOffset() const { return 3 + (colors.empty() ? 0 : 3); }
     size_t getStOffset()      const { return 3 + (colors.empty() ? 0 : 3) + (normals.empty() ? 0 : 3);}
     
+    Mesh() {}
+    ~Mesh() 
+    {
+        // optional: de-allocate all resources once they've outlived their purpose: -> when
+        glDeleteVertexArrays(1, &vao);
+        glDeleteBuffers(1, &vbo);
+        glDeleteBuffers(1, &ebo);
+    }
+
     void update() 
     {
         cache.clear();
@@ -54,6 +66,87 @@ struct Mesh
                 cache[offset + j]   = st[i*2+1]; 
             }
         }
+    }
+
+    void generateBufers() 
+    {        
+        // vao stores:
+        //  - calls to glEnableVertexAttribArray or glDisableVertexAttribArray
+        //  - Vertex attribute configurations via glVertexAttribPointer
+        //  - Vertex buffer objects associated with vertex attributes by calls to glVertexAttribPointer.
+        glGenVertexArrays(1, &vao); //< generate vao (stores vertex attribute calls)
+        glGenBuffers(1, &vbo); //< generate object buffer
+        glGenBuffers(1, &ebo); //< element bufferobject, stores indices that OpenGL uses to decide what vertices to draw -indexed drawing
+    }
+
+    void updateBufferData() 
+    {
+        glBindVertexArray(vao);
+        glBindBuffer(GL_ARRAY_BUFFER, vbo); //< bind it to GL_ARRAY_BUFFER target (vertex buffer object)
+
+        // From here any calls we make (on GL_ARRAY_BUFFER target) will be used to configure current bound buffer (vbo)
+
+        // glBufferData:
+        //  args: type of buffer, size of data (bytes), data, how to manage data
+        //  GL_STREAM_DRAW  -> data set once, used a few times.
+        //  GL_STATIC_DRAW  -> data set once, used many times.
+        //  GL_DYNAMIC_DRAW -> data changes and is used many times. 
+        glBufferData(GL_ARRAY_BUFFER, cache.size() * sizeof(float), cache.data(), GL_STATIC_DRAW); //< copy vertex data to bound buffer memory 
+
+        // now for ebo
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
+        glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(size_t), indices.data(), GL_STATIC_DRAW);
+        
+        // our data is tightly packed, first value at 0, only position data:
+        // x1,y1,z1,r1,g1,b1,x2,y2,z2,r2,g2,b2,...,xN,yN,zN,rN,gN,bN 
+        //  - each position data is a 32-bit (4 byte) float
+        //  - each position is composed of 6 values (x, y, z) + (r, b, b)
+
+        // Args:
+        //  - layout position (vertex attribute we want to configure)
+        //  - size of vertex attribute (3 values)
+        //  - type of data (GL_FLOAT)
+        //  - normalize data ???
+        //  - stride - space between consecutive vertex attributes -> x,y,z tightly packed -> 3*sizeof(float) or 0 to let opengl determine it (possible for tightly packed data)
+        //  - offset - where position data begins in the buffer
+
+        size_t stride = getStride();
+        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, stride * sizeof(float), (void*)0); 
+        glEnableVertexAttribArray(0); // enable vertex attribute at layout 0
+
+        // color attribute - same as before but at layout 1 with offset acounting for (x,y,z)
+        if(!colors.empty())
+        {
+            glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, stride * sizeof(float), (void*)(getColorOffset() * sizeof(float)));
+            glEnableVertexAttribArray(1);
+        }
+
+        if(!normals.empty())
+        {
+            glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, stride * sizeof(float), (void*)(getNormalsOffset() * sizeof(float)));
+            glEnableVertexAttribArray(2);
+        }
+
+        if(!st.empty())
+        {
+            glVertexAttribPointer(3, 2, GL_FLOAT, GL_FALSE, stride * sizeof(float), (void*)(getStOffset() * sizeof(float)));
+            glEnableVertexAttribArray(3);
+        }
+
+        // note that this is allowed, the call to glVertexAttribPointer registered VBO as the vertex attribute's bound vertex buffer object so afterwards we can safely unbind
+        glBindBuffer(GL_ARRAY_BUFFER, 0);
+
+        // You can unbind the VAO afterwards so other VAO calls won't accidentally modify this VAO, but this rarely happens. Modifying other
+        // VAOs requires a call to glBindVertexArray anyways so we generally don't unbind VAOs (nor VBOs) when it's not directly necessary.
+        glBindVertexArray(0);
+    }
+
+    void draw() {
+        // draw -------------------------------------------------------------------------------------------------------------------------
+        glBindVertexArray(vao); // seeing as we only have a single VAO there's no need to bind it every time, but we'll do so to keep things a bit more organized
+        //glDrawArrays(GL_TRIANGLES, 0, 3);
+        glDrawElements(GL_TRIANGLES, indices.size() /* indices */, GL_UNSIGNED_INT, 0);
+        // glBindVertexArray(0); // no need to unbind it every time
     }
 };
 
@@ -138,62 +231,3 @@ Mesh generateRectangle(bool colors=true, bool normals=true, bool st=true)
     return rectangle;
 }
 
-/**
- * Texture Wrapping
- * 
- * glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_MIRRORED_REPEAT);
- * glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_MIRRORED_REPEAT);
- * 
- * args: 
- *  - texture target (image is 2D)
- *  - target axis
- *  - texture wrapping mode
- * 
- * texture coordinates range (0,0) to (1,1), but may go outside range, so we introduce texture wrapping:
- *  - GL_REPEAT: The default behavior for textures. Repeats the texture image.
- *  - GL_MIRRORED_REPEAT: Same as GL_REPEAT but mirrors the image with each repeat.
- *  - GL_CLAMP_TO_EDGE: Clamps the coordinates between 0 and 1. The result is that higher coordinates become clamped to the edge, resulting in a stretched edge pattern.
- *  - GL_CLAMP_TO_BORDER: Coordinates outside the range are now given a user-specified border color.
- *      - this option also requires color: glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, {r,g,b,a})
- */
-
- /**
-  * Texture Filtering
-  * 
-  * determine wich texture pixel (texel) a float texture coordinate belongs to.
-  * 
-  * GL_NEAREST (nearest neightbour or point filtering) select texel with center closest to coordinate (default) - blocky
-  * GL_LINEAR  ((bi)linear filtering) interpolated value from coordinates neightboring texels. - smoother
-  * 
-  * They can be set for scaling up or down independently:
-  * glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-  * glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-  */
-
-  /**
-   * Mipmaps
-   * 
-   * textured objects small/far-away, with few fragments, produce artifacts due to ogl difficulty retrieving color.
-   * waste of memory bandwidth
-   * 
-   * Mipmaps introduce continuously size-halved versions of the image, allowing to pick the best suited one for an object 
-   * depending ond size/amount of fragments produced.
-   * 
-   * glGenerateMipmap - create mipmaps
-   * options:
-   *  - GL_NEAREST_MIPMAP_NEAREST: takes the nearest mipmap to match the pixel size and uses nearest neighbor interpolation for texture sampling.
-   *  - GL_LINEAR_MIPMAP_NEAREST: takes the nearest mipmap level and samples that level using linear interpolation.
-   *  - GL_NEAREST_MIPMAP_LINEAR: linearly interpolates between the two mipmaps that most closely match the size of a pixel and samples the interpolated level via nearest neighbor interpolation.
-   *  - GL_LINEAR_MIPMAP_LINEAR: linearly interpolates between the two closest mipmaps and samples the interpolated level via linear interpolation.
-   * 
-   * glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-   * glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR); // mipmap has no effect on magnification
-   */
-
-   /**
-    * loading and creating textures:
-    * 
-    * stb_image.h - single header image loading library by Sean Barrett
-    *   #define STB_IMAGE_IMPLEMENTATION
-    *   #include "stb_image.h"
-    */

@@ -45,6 +45,14 @@ add_subdirectory(
     ${glad2_BINARY_DIR}/cmake
 )
 
+# stb_image
+FetchContent_Declare(
+    stb
+    GIT_REPOSITORY https://github.com/nothings/stb.git
+    GIT_TAG master
+)
+FetchContent_MakeAvailable(stb)
+
 # Create a GLAD loader target for OpenGL 
 glad_add_library(
     glad_gl_core_46
@@ -53,3 +61,4 @@ glad_add_library(
 )
 
 target_link_libraries(oglpractice PRIVATE glad_gl_core_46)
+target_include_directories(oglpractice PRIVATE ${stb_SOURCE_DIR})
