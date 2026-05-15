@@ -8,5 +8,5 @@ uniform float variance; // we set this variable in the OpenGL code.
 void main()
 {
 
-    FragColor = vec4(vertexColor.x, vertexColor.y, vertexColor.z, 1.0f)*variance;
+    FragColor = vec4(vertexColor.x, vertexColor.y, vertexColor.z, 1.0f);
 }

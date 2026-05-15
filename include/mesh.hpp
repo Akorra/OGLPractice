@@ -11,13 +11,18 @@ struct Mesh
     std::vector<float>      cache;
     std::vector<uint32_t>   indices;
 
+    size_t getStride()        const { return 3 + (colors.empty() ? 0 : 3) + (normals.empty() ? 0 : 3) + (st.empty() ? 0 : 2); }
+    size_t getColorOffset()   const { return 3; }
+    size_t getNormalsOffset() const { return 3 + (colors.empty() ? 0 : 3); }
+    size_t getStOffset()      const { return 3 + (colors.empty() ? 0 : 3) + (normals.empty() ? 0 : 3);}
+    
     void update() 
     {
         cache.clear();
         
         if(vertices.empty()) return;
 
-        size_t stride = 3 + (colors.empty() ? 3 : 0) + (normals.empty() ? 3 : 0) + (st.empty() ? 2 : 0);
+        size_t stride = getStride();
         size_t vertexCount = vertices.size() / 3;
 
         cache.resize(vertexCount * stride);
@@ -52,7 +57,7 @@ struct Mesh
     }
 };
 
-Mesh& generateTriangle(bool colors=true, bool normals=true, bool st=true)
+Mesh generateTriangle(bool colors=true, bool normals=true, bool st=true)
 {
     Mesh triangle;
     triangle.vertices = {
@@ -89,7 +94,7 @@ Mesh& generateTriangle(bool colors=true, bool normals=true, bool st=true)
     return triangle;
 }
 
-Mesh& generateRectangle(bool colors=true, bool normals=true, bool st=true)
+Mesh generateRectangle(bool colors=true, bool normals=true, bool st=true)
 {
     Mesh rectangle;
     rectangle.vertices = {

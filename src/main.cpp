@@ -46,7 +46,7 @@ int main()
     Shader ourShader("./shaders/simple.vs.glsl", "./shaders/simple.fs.glsl"); // you can name your shader files however you like
 
     // adding color attribute the rasterizer performs fragment interpolation in fragment shader
-    Mesh mesh = generateTriangle();
+    Mesh mesh = generateTriangle(true, false, false);
 
     unsigned int vbo, vao, ebo;
     // vao stores:
@@ -67,7 +67,7 @@ int main()
     //  GL_STREAM_DRAW  -> data set once, used a few times.
     //  GL_STATIC_DRAW  -> data set once, used many times.
     //  GL_DYNAMIC_DRAW -> data changes and is used many times. 
-    glBufferData(GL_ARRAY_BUFFER, sizeof(mesh.vertices.data()), mesh.vertices.data(), GL_STATIC_DRAW); //< copy vertex data to bound buffer memory 
+    glBufferData(GL_ARRAY_BUFFER, mesh.cache.size() * sizeof(float), mesh.cache.data(), GL_STATIC_DRAW); //< copy vertex data to bound buffer memory 
 
     // now for ebo
     //glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
@@ -85,11 +85,14 @@ int main()
     //  - normalize data ???
     //  - stride - space between consecutive vertex attributes -> x,y,z tightly packed -> 3*sizeof(float) or 0 to let opengl determine it (possible for tightly packed data)
     //  - offset - where position data begins in the buffer
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0); 
+
+    size_t stride = mesh.getStride();
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, stride * sizeof(float), (void*)0); 
     glEnableVertexAttribArray(0); // enable vertex attribute at layout 0
 
     // color attribute - same as before but at layout 1 with offset acounting for (x,y,z)
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)(3* sizeof(float)));
+    size_t clrOffset = mesh.getColorOffset();
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, stride * sizeof(float), (void*)(clrOffset * sizeof(float)));
     glEnableVertexAttribArray(1);
 
     // note that this is allowed, the call to glVertexAttribPointer registered VBO as the vertex attribute's bound vertex buffer object so afterwards we can safely unbind
