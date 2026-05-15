@@ -1,6 +1,7 @@
 #include <iostream>
 
-#include "shaders.hpp"
+#include "shader.hpp"
+#include "mesh.hpp"
 #include <GLFW/glfw3.h>
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
@@ -8,8 +9,8 @@ void processInput(GLFWwindow *window);
 void getVertexAttribCount(int& count);
 
 // settings
-const unsigned int SCR_WIDTH = 800;
-const unsigned int SCR_HEIGHT = 600;
+constexpr unsigned int SCR_WIDTH  = 800;
+constexpr unsigned int SCR_HEIGHT = 600;
 
 int main()
 {
@@ -44,27 +45,8 @@ int main()
     // build and compile our shader program
     Shader ourShader("./shaders/simple.vs.glsl", "./shaders/simple.fs.glsl"); // you can name your shader files however you like
 
-    // rect geometry in normalized device coordinates, ndc, with x, y, z being [-1.0f, 1.0f]
-    /*float vertices[] = {
-        0.5f,  0.5f, 0.0f,  1.0f, 0.0f, 0.0f, // top right     (red)
-        0.5f, -0.5f, 0.0f,  0.0f, 1.0f, 0.0f, // bottom right  (green)
-        -0.5f, -0.5f, 0.0f, 0.0f, 0.0f, 1.0f, // bottom left   (blue)
-        -0.5f,  0.5f, 0.0f, 1.0f, 1.0f, 0.0f  // top left      (yellow)
-    };
-    /**/
-    float vertices[] = {
-    // positions         // colors
-     0.5f, -0.5f, 0.0f,  1.0f, 0.0f, 0.0f,   // bottom right
-    -0.5f, -0.5f, 0.0f,  0.0f, 1.0f, 0.0f,   // bottom left
-     0.0f,  0.5f, 0.0f,  0.0f, 0.0f, 1.0f    // top 
-    };/**/
-
     // adding color attribute the rasterizer performs fragment interpolation in fragment shader
-
-    unsigned int indices[] = {  // note that we start from 0!
-        0, 1, 3,   // first triangle
-        1, 2, 3    // second triangle
-    };
+    Mesh mesh = generateTriangle();
 
     unsigned int vbo, vao, ebo;
     // vao stores:
@@ -85,7 +67,7 @@ int main()
     //  GL_STREAM_DRAW  -> data set once, used a few times.
     //  GL_STATIC_DRAW  -> data set once, used many times.
     //  GL_DYNAMIC_DRAW -> data changes and is used many times. 
-    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW); //< copy vertex data to bound buffer memory 
+    glBufferData(GL_ARRAY_BUFFER, sizeof(mesh.vertices.data()), mesh.vertices.data(), GL_STATIC_DRAW); //< copy vertex data to bound buffer memory 
 
     // now for ebo
     //glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
@@ -103,11 +85,11 @@ int main()
     //  - normalize data ???
     //  - stride - space between consecutive vertex attributes -> x,y,z tightly packed -> 3*sizeof(float) or 0 to let opengl determine it (possible for tightly packed data)
     //  - offset - where position data begins in the buffer
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0); 
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0); 
     glEnableVertexAttribArray(0); // enable vertex attribute at layout 0
 
     // color attribute - same as before but at layout 1 with offset acounting for (x,y,z)
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3* sizeof(float)));
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)(3* sizeof(float)));
     glEnableVertexAttribArray(1);
 
     // note that this is allowed, the call to glVertexAttribPointer registered VBO as the vertex attribute's bound vertex buffer object so afterwards we can safely unbind
