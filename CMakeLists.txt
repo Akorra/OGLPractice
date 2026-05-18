@@ -53,6 +53,14 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(stb)
 
+FetchContent_Declare(
+    glm
+    GIT_REPOSITORY https://github.com/g-truc/glm.git
+    GIT_TAG 1.0.1  # Use a specific release tag
+    GIT_SHALLOW TRUE
+)
+FetchContent_MakeAvailable(glm)
+
 # Create a GLAD loader target for OpenGL 
 glad_add_library(
     glad_gl_core_46
@@ -60,5 +68,7 @@ glad_add_library(
     API gl:core=4.6
 )
 
+# Link GLM as a dependency
+target_link_libraries(oglpractice PUBLIC glm::glm)
 target_link_libraries(oglpractice PRIVATE glad_gl_core_46)
 target_include_directories(oglpractice PRIVATE ${stb_SOURCE_DIR})
