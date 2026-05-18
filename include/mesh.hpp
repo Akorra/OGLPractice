@@ -151,7 +151,7 @@ struct Mesh
     }
 };
 
-Mesh generateTriangle(bool colors=true, bool normals=true, bool st=true)
+Mesh generateTriangle(float stMin=0.0f, float stMax=1.0f, bool colors=true, bool normals=true, bool st=true)
 {
     Mesh triangle;
     triangle.vertices = {
@@ -176,9 +176,9 @@ Mesh generateTriangle(bool colors=true, bool normals=true, bool st=true)
 
     if(st)
         triangle.st = {
-            0.0f, 0.0f,  // lower-left corner  
-            1.0f, 0.0f,  // lower-right corner
-            0.5f, 1.0f   // top-center corner
+            stMin,   stMin,  // lower-left corner  
+            stMax,   stMax,  // lower-right corner
+            stMax/2, stMax   // top-center corner
         };
 
     triangle.update();
@@ -188,7 +188,7 @@ Mesh generateTriangle(bool colors=true, bool normals=true, bool st=true)
     return triangle;
 }
 
-Mesh generateRectangle(bool colors=true, bool normals=true, bool st=true)
+Mesh generateRectangle(float stMin=0.0f, float stMax=1.0f, bool colors=true, bool normals=true, bool st=true)
 {
     Mesh rectangle;
     rectangle.vertices = {
@@ -216,10 +216,10 @@ Mesh generateRectangle(bool colors=true, bool normals=true, bool st=true)
 
     if(st)
         rectangle.st = {
-            1.0f, 1.0f,
-            1.0f, 0.0f,
-            0.0f, 0.0f,
-            0.0f, 1.0f
+            stMax, stMax,
+            stMax, stMin,
+            stMin, stMin,
+            stMin, stMax
         };
 
     rectangle.update();

@@ -13,6 +13,9 @@ void getVertexAttribCount(int& count);
 constexpr unsigned int SCR_WIDTH  = 800;
 constexpr unsigned int SCR_HEIGHT = 600;
 
+// stores how much we're seeing of either texture
+float mixValue = 0.2f;
+
 int main()
 {
     // glfw: initialize and configure
@@ -47,7 +50,7 @@ int main()
     Shader ourShader("./shaders/simple.vs.glsl", "./shaders/simple.fs.glsl"); // you can name your shader files however you like
 
     // adding color attribute the rasterizer performs fragment interpolation in fragment shader
-    Mesh mesh = generateRectangle(true, false, true);
+    Mesh mesh = generateRectangle(0.0f, 1.0f, true, false, true);
     mesh.generateBufers();
     mesh.updateBufferData();
 
@@ -77,11 +80,10 @@ int main()
         ourShader.use();
         // set uniforms ------------------------------------------------------------------------------------------------------------------
         // update the uniform color - uniforms allow us to pass data from our application on the CPU to the shaders on the GPU
-        float timeValue = glfwGetTime();
-        float variance  = sin(timeValue) / 2.0f + 0.5f;
+        //float timeValue = glfwGetTime();
+        float variance = mixValue; //sin(timeValue) / 2.0f + 0.5f;
         ourShader.setFloat("variance", variance);
         
-
         mesh.draw();
 
         // glfw: swap buffers and poll IO events (keys pressed/released, mouse moved etc.)
@@ -99,6 +101,19 @@ void processInput(GLFWwindow *window)
 {
     if(glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
         glfwSetWindowShouldClose(window, true);
+    
+        if (glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS)
+    {
+        mixValue += 0.001f; // change this value accordingly (might be too slow or too fast based on system hardware)
+        if(mixValue >= 1.0f)
+            mixValue = 1.0f;
+    }
+    if (glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS)
+    {
+        mixValue -= 0.001f; // change this value accordingly (might be too slow or too fast based on system hardware)
+        if (mixValue <= 0.0f)
+            mixValue = 0.0f;
+    }
 }
 
 // glfw: whenever the window size changed (by OS or user resize) this callback function executes
