@@ -69,6 +69,6 @@ glad_add_library(
 )
 
 # Link GLM as a dependency
-target_link_libraries(oglpractice PUBLIC glm::glm)
+target_link_libraries(oglpractice PRIVATE glm::glm)
 target_link_libraries(oglpractice PRIVATE glad_gl_core_46)
 target_include_directories(oglpractice PRIVATE ${stb_SOURCE_DIR})

@@ -1,9 +1,12 @@
 #include <iostream>
 
+#define GLM_ENABLE_EXPERIMENTAL
+
 #include "shader.hpp"
 #include "texture.hpp"
 #include "mesh.hpp"
 #include <GLFW/glfw3.h>
+#include <glm/gtx/transform.hpp>
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 void processInput(GLFWwindow *window);
@@ -80,9 +83,15 @@ int main()
         ourShader.use();
         // set uniforms ------------------------------------------------------------------------------------------------------------------
         // update the uniform color - uniforms allow us to pass data from our application on the CPU to the shaders on the GPU
-        //float timeValue = glfwGetTime();
+        float timeValue = glfwGetTime();
         float variance = mixValue; //sin(timeValue) / 2.0f + 0.5f;
+        
+        glm::mat4 trans = glm::mat4(1.0f);
+        trans = glm::translate(trans, glm::vec3(0.5f, -0.5f, 0.0f));
+        trans = glm::rotate(trans, timeValue, glm::vec3(0.0f, 0.0f, 1.0f));
+
         ourShader.setFloat("variance", variance);
+        ourShader.setMat4("transform", trans);
         
         mesh.draw();
 
