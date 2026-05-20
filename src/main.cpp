@@ -86,10 +86,10 @@ int main()
 
     ourShader.use();
     ourShader.setInt("texture2", 1); //< tell ogl to wich texture unit each shader sampler belongs to. texture one goes to 0 by default
-    ourShader.setMat4("model", model);
-    ourShader.setMat4("view", view);
     ourShader.setMat4("projection", proj);
     
+    float camRadius = 10.0f, camX, camZ;
+
     // render loop ------------------------------------------------------------------------------------------------------------------
     glEnable(GL_DEPTH_TEST); //< enable depth testinggi
     while (!glfwWindowShouldClose(window))
@@ -107,6 +107,12 @@ int main()
 
         ourShader.use();
         ourShader.setFloat("variance", mixValue);
+
+        camX = sin(glfwGetTime())*camRadius;
+        camZ = cos(glfwGetTime())*camRadius;
+
+        view = glm::lookAt(glm::vec3(camX, 0.0, camZ), glm::vec3(0.0, 0.0, 0.0), glm::vec3(0.0, 1.0, 0.0));
+        ourShader.setMat4("view", view);
 
         for(uint32_t i=0; i<mesh.spawnAt.size(); ++i)
         {
