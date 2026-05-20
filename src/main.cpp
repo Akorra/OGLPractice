@@ -112,9 +112,11 @@ int main()
 
     glm::mat3 normalMatrix;
     glm::mat4 projection, view, model;
-    glm::vec3 lightPosition(1.2f, 1.0f, 2.0f);
+    glm::vec3 lightPosition(1.2f, 1.0f, 2.0f), lightColor(1.0f), objectColor(1.0f, 0.5f, 0.31f);
+    glm::vec3 diffuseColor(1.0f), ambientColor(1.0f), specularColor(1.0f);
 
     // render loop
+    unsigned int i=0;
     while (!glfwWindowShouldClose(window))
     {
         // per-frame time logic
@@ -129,21 +131,43 @@ int main()
         glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+        lightPosition.x = 2.0f*glm::cos(glm::radians(20.0f*glfwGetTime()));
+        lightPosition.y = 2.0f*glm::sin(glm::radians(20.0f*glfwGetTime()));
+        lightPosition.z = 0.0f;
+
+        lightColor.x = static_cast<float>(sin(glfwGetTime() * 2.0));
+        lightColor.y = static_cast<float>(sin(glfwGetTime() * 0.7));
+        lightColor.z = static_cast<float>(sin(glfwGetTime() * 1.3));
+
+        diffuseColor = lightColor   * glm::vec3(0.5f); // decrease the influence
+        ambientColor = diffuseColor * glm::vec3(0.2f); // low influence
+
         // be sure to activate shader when setting uniforms/drawing objects
         lightingShader.use();
-        lightingShader.setFloat3("objectColor", 1.0f, 0.5f, 0.31f);
-        lightingShader.setFloat3("lightColor",  1.0f, 1.0f, 1.0f);
-        lightingShader.setFloat3("lightPosition", lightPosition.x, lightPosition.y, lightPosition.z);
+
+        // light properties
+        lightingShader.setFloat3("light.position", lightPosition);
+        lightingShader.setFloat3("viewPosition",   camera.position);
+        lightingShader.setFloat3("light.ambient",  ambientColor);
+        lightingShader.setFloat3("light.diffuse",  diffuseColor);
+        lightingShader.setFloat3("light.specular", specularColor);
+
+        // material properties
+        unsigned int index = static_cast<unsigned int>(glfwGetTime() / 5.0) % materialCount; //< change ever5 5 secs
+        lightingShader.setFloat3("material.ambient", materials[index].ambient);
+        lightingShader.setFloat3("material.diffuse", materials[index].diffuse);
+        lightingShader.setFloat3("material.specular", materials[index].specular); // specular lighting doesn't have full effect on this object's material
+        lightingShader.setFloat("material.shininess", materials[index].shininess);
 
         // view/projection/world transformations
         projection   = glm::perspective(glm::radians(camera.zoom), (float)SCR_WIDTH / (float)SCR_HEIGHT, NEAR_PLANE, FAR_PLANE);
         view         = camera.GetViewMatrix();
         model        = glm::mat4(1.0f);
         normalMatrix = glm::mat3(glm::transpose(glm::inverse(model)));
-        lightingShader.setMat4("projection", projection);
-        lightingShader.setMat4("view",       view);
-        lightingShader.setMat4("model",      model);
-        lightingShader.setMat3("normal",     normalMatrix);
+        lightingShader.setMat4("projection",   projection);
+        lightingShader.setMat4("view",         view);
+        lightingShader.setMat4("model",        model);
+        lightingShader.setMat3("normalMatrix", normalMatrix);
 
         // render the cube
         glBindVertexArray(cubeVAO);
@@ -153,6 +177,10 @@ int main()
         lightCubeShader.use();
         lightCubeShader.setMat4("projection", projection);
         lightCubeShader.setMat4("view", view);
+        lightCubeShader.setFloat3("light.position", lightPosition);
+        lightCubeShader.setFloat3("light.ambient",  ambientColor);
+        lightCubeShader.setFloat3("light.diffuse",  diffuseColor);
+        lightCubeShader.setFloat3("light.specular", specularColor);
         
         model = glm::mat4(1.0f);
         model = glm::translate(model, lightPosition);

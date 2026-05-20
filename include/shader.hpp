@@ -25,11 +25,11 @@ public:
     void setBool(const std::string &name, bool value) const;  
     void setInt(const std::string &name, int value) const;   
     void setFloat(const std::string &name, float value) const;
-    void setFloat2(const std::string &name, float x, float y) const;
-    void setFloat3(const std::string &name, float x, float y, float z) const;
-    void setFloat4(const std::string &name, float x, float y, float z, float w) const;
-    void setMat3(const std::string &name, glm::mat3& transform) const;
-    void setMat4(const std::string &name, glm::mat4& transform) const;
+    void setFloat2(const std::string &name, const glm::vec2& v) const;
+    void setFloat3(const std::string &name, const glm::vec3& v) const;
+    void setFloat4(const std::string &name, const glm::vec4& v) const;
+    void setMat3(const std::string &name, const glm::mat3& transform) const;
+    void setMat4(const std::string &name, const glm::mat4& transform) const;
 
 private:
     void checkCompileErrors(unsigned int shader, std::string type);
