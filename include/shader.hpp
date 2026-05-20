@@ -29,7 +29,6 @@ public:
     void setFloat3(const std::string &name, float x, float y, float z) const;
     void setFloat4(const std::string &name, float x, float y, float z, float w) const;
     void setMat4(const std::string &name, glm::mat4& transform) const;
-    void setTexture(const std::string &name, const std::string &path) const;
 
 private:
     void checkCompileErrors(unsigned int shader, std::string type);

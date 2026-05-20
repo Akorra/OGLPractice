@@ -6,15 +6,17 @@
 #include "texture.hpp"
 #include "mesh.hpp"
 #include <GLFW/glfw3.h>
-#include <glm/gtx/transform.hpp>
+#include <glm/gtc/matrix_transform.hpp>
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 void processInput(GLFWwindow *window);
 void getVertexAttribCount(int& count);
 
 // settings
-constexpr unsigned int SCR_WIDTH  = 800;
-constexpr unsigned int SCR_HEIGHT = 600;
+constexpr unsigned int  SCR_WIDTH  = 800;
+constexpr unsigned int  SCR_HEIGHT = 600;
+constexpr float         NEAR_PLANE = 0.1f;
+constexpr float         FAR_PLANE  = 100.0f;
 
 // stores how much we're seeing of either texture
 float mixValue = 0.2f;
@@ -53,7 +55,8 @@ int main()
     Shader ourShader("./shaders/simple.vs.glsl", "./shaders/simple.fs.glsl"); // you can name your shader files however you like
 
     // adding color attribute the rasterizer performs fragment interpolation in fragment shader
-    Mesh mesh = generateRectangle(0.0f, 1.0f, true, false, true);
+    Mesh mesh = generateCube(1.0f, true, false, true);
+    //Mesh mesh = generateRectangle(0.0f, 1.0f, true, false, true);
     mesh.generateBufers();
     mesh.updateBufferData();
 
@@ -63,10 +66,20 @@ int main()
     // wireframe (incomment):
     // glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
+    // Transform Matrices
+    glm::mat4 model = glm::rotate(glm::mat4(1.0f), glm::radians(-55.0f), glm::vec3(1.0f, 0.0f, 0.0f)); // 55º rotation around x axis
+    glm::mat4 view  = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, 0.0f, -3.0f)); //move camera to z=3 (reverse translation we apply to world)
+    glm::mat4 proj  = glm::perspective<float>(glm::radians(45.0f), (float)SCR_WIDTH / (float)SCR_HEIGHT, NEAR_PLANE, FAR_PLANE);
+
+
     ourShader.use();
     ourShader.setInt("texture2", 1); //< tell ogl to wich texture unit each shader sampler belongs to. texture one goes to 0 by default
-
+    ourShader.setMat4("model", model);
+    ourShader.setMat4("view", view);
+    ourShader.setMat4("projection", proj);
+    
     // render loop ------------------------------------------------------------------------------------------------------------------
+    glEnable(GL_DEPTH_TEST); //< enable depth testing
     while (!glfwWindowShouldClose(window))
     {
         // input
@@ -74,24 +87,22 @@ int main()
 
         // render
         glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
-        glClear(GL_COLOR_BUFFER_BIT);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); // also clear z-buffer
 
         // ogl provides atleast 16 texture units
         texture1.bind(GL_TEXTURE0);
         texture2.bind(GL_TEXTURE0 + 1); // or GL_TEXTURE1
 
         ourShader.use();
+
         // set uniforms ------------------------------------------------------------------------------------------------------------------
         // update the uniform color - uniforms allow us to pass data from our application on the CPU to the shaders on the GPU
         float timeValue = glfwGetTime();
         float variance = mixValue; //sin(timeValue) / 2.0f + 0.5f;
-        
-        glm::mat4 trans = glm::mat4(1.0f);
-        trans = glm::translate(trans, glm::vec3(0.5f, -0.5f, 0.0f));
-        trans = glm::rotate(trans, timeValue, glm::vec3(0.0f, 0.0f, 1.0f));
+        model = glm::rotate(glm::mat4(1.0f), timeValue * glm::radians(50.0f), glm::vec3(0.5f, 1.0f, 0.0f));
+        ourShader.setMat4("model", model);
 
         ourShader.setFloat("variance", variance);
-        ourShader.setMat4("transform", trans);
         
         mesh.draw();
 
