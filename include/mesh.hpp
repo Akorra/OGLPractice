@@ -15,10 +15,10 @@ struct Mesh
     std::vector<uint32_t>   indices;
 
     size_t getVertexCont()    const { return vertices.size() / 3; }
-    size_t getStride()        const { return 3 + (colors.empty() ? 0 : 3) + (normals.empty() ? 0 : 3) + (st.empty() ? 0 : 2); }
+    size_t getStride()        const { return 3 + (colors.empty() ? 0 : 4) + (normals.empty() ? 0 : 3) + (st.empty() ? 0 : 2); }
     size_t getColorOffset()   const { return 3; }
-    size_t getNormalsOffset() const { return 3 + (colors.empty() ? 0 : 3); }
-    size_t getStOffset()      const { return 3 + (colors.empty() ? 0 : 3) + (normals.empty() ? 0 : 3);}
+    size_t getNormalsOffset() const { return 3 + (colors.empty() ? 0 : 4); }
+    size_t getStOffset()      const { return 3 + (colors.empty() ? 0 : 4) + (normals.empty() ? 0 : 3);}
     
     Mesh() {}
     ~Mesh() 
@@ -26,7 +26,8 @@ struct Mesh
         // optional: de-allocate all resources once they've outlived their purpose: -> when
         glDeleteVertexArrays(1, &vao);
         glDeleteBuffers(1, &vbo);
-        glDeleteBuffers(1, &ebo);
+        if(!indices.empty())
+            glDeleteBuffers(1, &ebo);
     }
 
     void update() 
@@ -49,16 +50,17 @@ struct Mesh
 
             if(!colors.empty())
             {
-                cache[offset + j++] = colors[i*3];  
-                cache[offset + j++] = colors[i*3+1];
-                cache[offset + j++] = colors[i*3+2];
+                cache[offset + j++] = colors[i*4];  
+                cache[offset + j++] = colors[i*4+1];
+                cache[offset + j++] = colors[i*4+2];
+                cache[offset + j++] = colors[i*4+3];
             }
 
             if(!normals.empty())
             {
-                cache[offset + j++] = colors[i*3];  
-                cache[offset + j++] = colors[i*3+1];
-                cache[offset + j++] = colors[i*3+2];
+                cache[offset + j++] = normals[i*3];  
+                cache[offset + j++] = normals[i*3+1];
+                cache[offset + j++] = normals[i*3+2];
             }
 
             if(!st.empty())
@@ -77,7 +79,9 @@ struct Mesh
         //  - Vertex buffer objects associated with vertex attributes by calls to glVertexAttribPointer.
         glGenVertexArrays(1, &vao); //< generate vao (stores vertex attribute calls)
         glGenBuffers(1, &vbo); //< generate object buffer
-        glGenBuffers(1, &ebo); //< element bufferobject, stores indices that OpenGL uses to decide what vertices to draw -indexed drawing
+
+        if(!indices.empty())
+            glGenBuffers(1, &ebo); //< element bufferobject, stores indices that OpenGL uses to decide what vertices to draw -indexed drawing
     }
 
     void updateBufferData() 
@@ -95,9 +99,12 @@ struct Mesh
         glBufferData(GL_ARRAY_BUFFER, cache.size() * sizeof(float), cache.data(), GL_STATIC_DRAW); //< copy vertex data to bound buffer memory 
 
         // now for ebo
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
-        glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(size_t), indices.data(), GL_STATIC_DRAW);
-        
+        if(!indices.empty())
+        {
+            glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
+            glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(uint32_t), indices.data(), GL_STATIC_DRAW);
+        }
+
         // our data is tightly packed, first value at 0, only position data:
         // x1,y1,z1,r1,g1,b1,x2,y2,z2,r2,g2,b2,...,xN,yN,zN,rN,gN,bN 
         //  - each position data is a 32-bit (4 byte) float
@@ -118,7 +125,7 @@ struct Mesh
         // color attribute - same as before but at layout 1 with offset acounting for (x,y,z)
         if(!colors.empty())
         {
-            glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, stride * sizeof(float), (void*)(getColorOffset() * sizeof(float)));
+            glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, stride * sizeof(float), (void*)(getColorOffset() * sizeof(float)));
             glEnableVertexAttribArray(1);
         }
 
@@ -145,8 +152,11 @@ struct Mesh
     void draw() {
         // draw -------------------------------------------------------------------------------------------------------------------------
         glBindVertexArray(vao); // seeing as we only have a single VAO there's no need to bind it every time, but we'll do so to keep things a bit more organized
-        //glDrawArrays(GL_TRIANGLES, 0, 3);
-        glDrawElements(GL_TRIANGLES, indices.size() /* indices */, GL_UNSIGNED_INT, 0);
+        
+        if(indices.empty())
+            glDrawArrays(GL_TRIANGLES, 0, vertices.size()/3);
+        else
+            glDrawElements(GL_TRIANGLES, indices.size() /* indices */, GL_UNSIGNED_INT, 0);
         // glBindVertexArray(0); // no need to unbind it every time
     }
 };
@@ -162,9 +172,9 @@ Mesh generateTriangle(float stMin=0.0f, float stMax=1.0f, bool colors=true, bool
 
     if(colors)
         triangle.colors = {
-            1.0f, 0.0f, 0.0f,  // bottom right
-            0.0f, 1.0f, 0.0f,  // bottom left
-            0.0f, 0.0f, 1.0f   // top 
+            1.0f, 0.0f, 0.0f, 1.0f,  // bottom right
+            0.0f, 1.0f, 0.0f, 1.0f,  // bottom left
+            0.0f, 0.0f, 1.0f, 1.0f   // top 
         };
 
     if(normals)
@@ -200,10 +210,10 @@ Mesh generateRectangle(float stMin=0.0f, float stMax=1.0f, bool colors=true, boo
     
     if(colors)
         rectangle.colors = {
-            1.0f, 0.0f, 0.0f, // top right    (red)
-            0.0f, 1.0f, 0.0f, // bottom right (green)
-            0.0f, 0.0f, 1.0f, // bottom left  (blue)
-            1.0f, 1.0f, 0.0f  // top left     (yellow)
+            1.0f, 0.0f, 0.0f, 1.0f, // top right    (red)
+            0.0f, 1.0f, 0.0f, 1.0f, // bottom right (green)
+            0.0f, 0.0f, 1.0f, 1.0f, // bottom left  (blue)
+            1.0f, 1.0f, 0.0f, 1.0f  // top left     (yellow)
         };
 
     if(normals)
@@ -232,3 +242,241 @@ Mesh generateRectangle(float stMin=0.0f, float stMax=1.0f, bool colors=true, boo
     return rectangle;
 }
 
+Mesh generateCube(float side=1.0f, bool colors=true, bool normals=true, bool st=true)
+{
+    float h = side/2;
+
+    Mesh cube;
+    cube.vertices = {
+        // Back (-Z)
+        -h, -h, -h,
+         h, -h, -h,
+         h,  h, -h,
+
+         h,  h, -h,
+        -h,  h, -h,
+        -h, -h, -h,
+
+        // Front (+Z)
+        -h, -h,  h,
+         h, -h,  h,
+         h,  h,  h,
+
+         h,  h,  h,
+        -h,  h,  h,
+        -h, -h,  h,
+
+        // Left (-X)
+        -h,  h,  h,
+        -h,  h, -h,
+        -h, -h, -h,
+
+        -h, -h, -h,
+        -h, -h,  h,
+        -h,  h,  h,
+
+        // Right (+X)
+         h,  h,  h,
+         h,  h, -h,
+         h, -h, -h,
+
+         h, -h, -h,
+         h, -h,  h,
+         h,  h,  h,
+
+        // Bottom (-Y)
+        -h, -h, -h,
+         h, -h, -h,
+         h, -h,  h,
+
+         h, -h,  h,
+        -h, -h,  h,
+        -h, -h, -h,
+
+        // Top (+Y)
+        -h,  h, -h,
+         h,  h, -h,
+         h,  h,  h,
+
+         h,  h,  h,
+        -h,  h,  h,
+        -h,  h, -h
+    };
+
+    if(colors)
+        cube.colors = {
+            // Back face
+            1,0,0,1,   // bottom-left  = red
+            0,1,0,1,   // bottom-right = green
+            0,0,1,1,   // top-right    = blue
+
+            0,0,1,1,   // top-right    = blue
+            1,1,0,1,   // top-left     = yellow
+            1,0,0,1,   // bottom-left  = red
+
+            // Front face
+            1,0,0,1,
+            0,1,0,1,
+            0,0,1,1,
+
+            0,0,1,1,
+            1,1,0,1,
+            1,0,0,1,
+
+            // Left face
+            1,0,0,1,
+            0,1,0,1,
+            0,0,1,1,
+
+            0,0,1,1,
+            1,1,0,1,
+            1,0,0,1,
+
+            // Right face
+            1,0,0,1,
+            0,1,0,1,
+            0,0,1,1,
+
+            0,0,1,1,
+            1,1,0,1,
+            1,0,0,1,
+
+            // Bottom face
+            1,0,0,1,
+            0,1,0,1,
+            0,0,1,1,
+
+            0,0,1,1,
+            1,1,0,1,
+            1,0,0,1,
+
+            // Top face
+            1,0,0,1,
+            0,1,0,1,
+            0,0,1,1,
+
+            0,0,1,1,
+            1,1,0,1,
+            1,0,0,1
+        };
+
+    if(normals)
+        cube.normals = {
+            // Back
+             0,  0, -1,
+             0,  0, -1,
+             0,  0, -1,
+
+             0,  0, -1,
+             0,  0, -1,
+             0,  0, -1,
+
+            // Front
+             0,  0,  1,
+             0,  0,  1,
+             0,  0,  1,
+
+             0,  0,  1,
+             0,  0,  1,
+             0,  0,  1,
+
+            // Left
+            -1,  0,  0,
+            -1,  0,  0,
+            -1,  0,  0,
+
+            -1,  0,  0,
+            -1,  0,  0,
+            -1,  0,  0,
+
+            // Right
+             1,  0,  0,
+             1,  0,  0,
+             1,  0,  0,
+
+             1,  0,  0,
+             1,  0,  0,
+             1,  0,  0,
+
+            // Bottom
+             0, -1,  0,
+             0, -1,  0,
+             0, -1,  0,
+
+             0, -1,  0,
+             0, -1,  0,
+             0, -1,  0,
+
+            // Top
+             0,  1,  0,
+             0,  1,  0,
+             0,  1,  0,
+
+             0,  1,  0,
+             0,  1,  0,
+             0,  1,  0
+        };
+
+    if(st)
+        cube.st = {
+            // Back
+            0.0f, 0.0f,
+            1.0f, 0.0f,
+            1.0f, 1.0f,
+
+            1.0f, 1.0f,
+            0.0f, 1.0f,
+            0.0f, 0.0f,
+
+            // Front
+            0.0f, 0.0f,
+            1.0f, 0.0f,
+            1.0f, 1.0f,
+
+            1.0f, 1.0f,
+            0.0f, 1.0f,
+            0.0f, 0.0f,
+
+            // Left
+            1.0f, 0.0f,
+            1.0f, 1.0f,
+            0.0f, 1.0f,
+
+            0.0f, 1.0f,
+            0.0f, 0.0f,
+            1.0f, 0.0f,
+
+            // Right
+            1.0f, 0.0f,
+            1.0f, 1.0f,
+            0.0f, 1.0f,
+
+            0.0f, 1.0f,
+            0.0f, 0.0f,
+            1.0f, 0.0f,
+
+            // Bottom
+            0.0f, 1.0f,
+            1.0f, 1.0f,
+            1.0f, 0.0f,
+
+            1.0f, 0.0f,
+            0.0f, 0.0f,
+            0.0f, 1.0f,
+
+            // Top
+            0.0f, 1.0f,
+            1.0f, 1.0f,
+            1.0f, 0.0f,
+
+            1.0f, 0.0f,
+            0.0f, 0.0f,
+            0.0f, 1.0f
+        };
+
+    cube.update();
+
+    cube.indices = {};
+
+    return cube;
+}
