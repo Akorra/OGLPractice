@@ -28,6 +28,7 @@ public:
     void setFloat2(const std::string &name, float x, float y) const;
     void setFloat3(const std::string &name, float x, float y, float z) const;
     void setFloat4(const std::string &name, float x, float y, float z, float w) const;
+    void setMat3(const std::string &name, glm::mat3& transform) const;
     void setMat4(const std::string &name, glm::mat4& transform) const;
 
 private:
