@@ -38,7 +38,8 @@ float deltaTime = 0.0f;
 float lastFrame = 0.0f;
 
 // mouse io
-bool mouseDown = false;
+bool mouseDown  = false;
+bool firstMouse = true;
 
 int main()
 {
@@ -66,7 +67,7 @@ int main()
     glfwSetScrollCallback(window,          scroll_callback);
 
     // tell GLFW to capture our mouse
-    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+    //glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
     // glad: load all OpenGL function pointers
     if (!gladLoadGL(glfwGetProcAddress)) 
@@ -85,6 +86,8 @@ int main()
     unsigned int VBO, cubeVAO;
     glGenVertexArrays(1, &cubeVAO);
     glGenBuffers(1, &VBO);
+
+    glBindVertexArray(cubeVAO);
 
     glBindBuffer(GL_ARRAY_BUFFER, VBO);
     glBufferData(GL_ARRAY_BUFFER, sizeof(cube), cube, GL_STATIC_DRAW);
@@ -128,7 +131,7 @@ int main()
         lightingShader.setFloat3("lightColor",  1.0f, 1.0f, 1.0f);
 
         // view/projection/world transformations
-        projection = glm::perspective(glm::radians(camera.zoom), (float)windowSize.x / (float)windowSize.y, NEAR_PLANE, FAR_PLANE);
+        projection = glm::perspective(glm::radians(camera.zoom), (float)SCR_WIDTH / (float)SCR_HEIGHT, NEAR_PLANE, FAR_PLANE);
         view       = camera.GetViewMatrix();
         model      = glm::mat4(1.0f);
         lightingShader.setMat4("model", model);
@@ -152,7 +155,7 @@ int main()
         lightCubeShader.setMat4("model", model);
 
         glBindVertexArray(lightCubeVAO);
-        glDrawArrays(GL_TRIANGLES, 0, 36);
+        glDrawArrays(GL_TRIANGLES, 0, cubeVertCount);
 
         // glfw: swap buffers and poll IO events (keys pressed/released, mouse moved etc.)
         glfwSwapBuffers(window);
@@ -198,8 +201,17 @@ void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
 
 void mouse_callback(GLFWwindow* window, double xposIn, double yposIn)
 {
+    if(!mouseDown) return;
+
     float xpos = static_cast<float>(xposIn);
     float ypos = static_cast<float>(yposIn);
+
+    if(firstMouse)
+    {
+        lastX = xpos;
+        lastY = ypos;
+        firstMouse = false;
+    }
 
     float xoffset = xpos - lastX;
     float yoffset = lastY - ypos; // reversed since y-coordinates go from bottom to top
