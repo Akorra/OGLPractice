@@ -14,11 +14,15 @@ struct Mesh
     std::vector<float>      cache;
     std::vector<uint32_t>   indices;
 
+    std::vector<glm::vec3>  spawnAt = {glm::vec3(0.0f)};
+
     size_t getVertexCont()    const { return vertices.size() / 3; }
     size_t getStride()        const { return 3 + (colors.empty() ? 0 : 4) + (normals.empty() ? 0 : 3) + (st.empty() ? 0 : 2); }
     size_t getColorOffset()   const { return 3; }
     size_t getNormalsOffset() const { return 3 + (colors.empty() ? 0 : 4); }
     size_t getStOffset()      const { return 3 + (colors.empty() ? 0 : 4) + (normals.empty() ? 0 : 3);}
+
+    void addSpawnAt(std::vector<glm::vec3>&& spawns) {  spawnAt.insert(spawnAt.end(), spawns.begin(), spawns.end()); }
     
     Mesh() {}
     ~Mesh() 

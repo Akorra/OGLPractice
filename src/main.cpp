@@ -56,6 +56,18 @@ int main()
 
     // adding color attribute the rasterizer performs fragment interpolation in fragment shader
     Mesh mesh = generateCube(1.0f, true, false, true);
+    mesh.addSpawnAt({
+        glm::vec3( 2.0f,  5.0f, -15.0f), 
+        glm::vec3(-1.5f, -2.2f, -2.5f),  
+        glm::vec3(-3.8f, -2.0f, -12.3f),  
+        glm::vec3( 2.4f, -0.4f, -3.5f),  
+        glm::vec3(-1.7f,  3.0f, -7.5f),  
+        glm::vec3( 1.3f, -2.0f, -2.5f),  
+        glm::vec3( 1.5f,  2.0f, -2.5f), 
+        glm::vec3( 1.5f,  0.2f, -1.5f), 
+        glm::vec3(-1.3f,  1.0f, -1.5f) 
+    });
+
     //Mesh mesh = generateRectangle(0.0f, 1.0f, true, false, true);
     mesh.generateBufers();
     mesh.updateBufferData();
@@ -79,7 +91,7 @@ int main()
     ourShader.setMat4("projection", proj);
     
     // render loop ------------------------------------------------------------------------------------------------------------------
-    glEnable(GL_DEPTH_TEST); //< enable depth testing
+    glEnable(GL_DEPTH_TEST); //< enable depth testinggi
     while (!glfwWindowShouldClose(window))
     {
         // input
@@ -94,18 +106,22 @@ int main()
         texture2.bind(GL_TEXTURE0 + 1); // or GL_TEXTURE1
 
         ourShader.use();
+        ourShader.setFloat("variance", mixValue);
 
-        // set uniforms ------------------------------------------------------------------------------------------------------------------
-        // update the uniform color - uniforms allow us to pass data from our application on the CPU to the shaders on the GPU
-        float timeValue = glfwGetTime();
-        float variance = mixValue; //sin(timeValue) / 2.0f + 0.5f;
-        model = glm::rotate(glm::mat4(1.0f), timeValue * glm::radians(50.0f), glm::vec3(0.5f, 1.0f, 0.0f));
-        ourShader.setMat4("model", model);
+        for(uint32_t i=0; i<mesh.spawnAt.size(); ++i)
+        {
+            // set uniforms ------------------------------------------------------------------------------------------------------------------
+            // update the uniform color - uniforms allow us to pass data from our application on the CPU to the shaders on the GPU
+            model = glm::mat4(1.0f);
+            model = glm::translate(model, mesh.spawnAt[i]);
 
-        ourShader.setFloat("variance", variance);
-        
-        mesh.draw();
+            float angle = glm::radians(20.0f*(i+1))*glfwGetTime();
+            model = glm::rotate(model, angle, glm::vec3(1.0f, 0.3f, 0.5f));
+            
+            ourShader.setMat4("model", model);
 
+            mesh.draw();
+        }
         // glfw: swap buffers and poll IO events (keys pressed/released, mouse moved etc.)
         glfwSwapBuffers(window);
         glfwPollEvents();
