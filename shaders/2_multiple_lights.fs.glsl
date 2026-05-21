@@ -6,7 +6,8 @@ in vec3 FragPosition;
 
 out vec4 FragColor;
 
-uniform vec3 viewPosition;
+uniform vec3  viewPosition;
+uniform float pulse;
 
 struct Material {
     sampler2D diffuse;
@@ -151,6 +152,8 @@ void main()
 
     // 3. spotlight contribution
     result += CalcSpotLight(spotLight, norm, FragPosition, viewDir);
+
+    result += step(vec3(texture(material.specular, TexCoords)), vec3(0.0)) * pulse * vec3(texture(material.emission, TexCoords));
 
     FragColor = vec4(result, 1.0);
 }

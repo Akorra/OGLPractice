@@ -10,7 +10,7 @@
 #include "camera.hpp"
 #include "geometryhelper.hpp"
 #include "materialhelper.hpp"
-#include "lighthelper.hpp"
+#include "lightpresets.hpp"
 
 #include <glad/gl.h>
 #include <GLFW/glfw3.h>
@@ -126,13 +126,7 @@ int main()
     diffuseMaterial.loadTexture(diffuseMaterial.specularMapId, "./textures/container2_specular.png");
     diffuseMaterial.loadTexture(diffuseMaterial.emissionMapId, "./textures/matrix.jpg");
 
-    DirectionalLight dirlight; // use defaults
-    PointLight       pointlights[4]; // also build defaults
-    SpotLight        flashLight;
-
-    // change spotlight positions
-    for(int i=0; i<4; ++i)
-        pointlights[i].position = pointLightPositions[i];
+    LightEnv env = LightPresets::HORROR;
 
     // shader config
     lightingShader.use();
@@ -142,10 +136,9 @@ int main()
     lightingShader.setFloat("material.shininess", diffuseMaterial.shininess);
 
     // add static lights:
-    lightingShader.addDirectionalLight("dirLight", &dirlight);
+    lightingShader.addDirectionalLight("dirLight", &env.directionalLight);
     for(int i=0; i<4; ++i)
-        lightingShader.addPointLight("pointLights[" + std::to_string(i) + "]", &(pointlights[i]));
-
+        lightingShader.addPointLight("pointLights[" + std::to_string(i) + "]", &(env.pointLights[i]));
 
     // render loop
     unsigned int i=0;
@@ -160,18 +153,18 @@ int main()
         processInput(window);
 
         // render
-        glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
+        glClearColor(env.clearColor.x, env.clearColor.y, env.clearColor.z, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 
         // be sure to activate shader when setting uniforms/drawing objects
         lightingShader.use();
         lightingShader.setFloat3("viewPosition", camera.position);
-        //lightingShader.setFloat("mixer", 0.0f);//0.7f + sin(75.f*glm::radians(glfwGetTime()))*0.3f);
+        lightingShader.setFloat("pulse", 0.5f + sin(75.f*glm::radians(glfwGetTime()))*0.5f);
 
-        flashLight.position = camera.position;
-        flashLight.direction = camera.front;
-        lightingShader.addSpotLight("spotLight", &flashLight);
+        env.spotLight.position = camera.position;
+        env.spotLight.direction = camera.front;
+        lightingShader.addSpotLight("spotLight", &(env.spotLight));
 
         // view/projection/world transformations
         projection   = glm::perspective(glm::radians(camera.zoom), (float)SCR_WIDTH / (float)SCR_HEIGHT, NEAR_PLANE, FAR_PLANE);
@@ -201,12 +194,12 @@ int main()
         glBindVertexArray(lightCubeVAO);
         for(unsigned int i=0; i<4; ++i)
         {
-            lightCubeShader.setFloat3("light.ambient",  pointlights[i].ambient);
-            lightCubeShader.setFloat3("light.diffuse",  pointlights[i].diffuse);
-            lightCubeShader.setFloat3("light.specular", pointlights[i].specular);
+            lightCubeShader.setFloat3("light.ambient",  env.pointLights[i].ambient);
+            lightCubeShader.setFloat3("light.diffuse",  env.pointLights[i].diffuse);
+            lightCubeShader.setFloat3("light.specular", env.pointLights[i].specular);
             
             model = glm::mat4(1.0f);
-            model = glm::translate(model,  pointlights[i].position);
+            model = glm::translate(model,  env.pointLights[i].position);
             model = glm::scale(model, glm::vec3(0.2f)); // a smaller cube
             
             lightCubeShader.setMat4("model", model);

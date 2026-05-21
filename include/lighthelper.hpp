@@ -46,3 +46,11 @@ inline constexpr glm::vec3 pointLightPositions[] = {
     glm::vec3(-4.0f,  2.0f, -12.0f),
     glm::vec3( 0.0f,  0.0f, -3.0f)
 };
+
+struct LightEnv
+{
+    glm::vec3        clearColor;
+    DirectionalLight directionalLight;
+    PointLight       pointLights[4];
+    SpotLight        spotLight;
+};
