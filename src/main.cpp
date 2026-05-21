@@ -126,7 +126,7 @@ int main()
     diffuseMaterial.loadTexture(diffuseMaterial.specularMapId, "./textures/container2_specular.png");
     diffuseMaterial.loadTexture(diffuseMaterial.emissionMapId, "./textures/matrix.jpg");
 
-    LightEnv env = LightPresets::HORROR;
+    LightEnv env = LightPresets::BIOCHEMICAL_LAB;
 
     // shader config
     lightingShader.use();

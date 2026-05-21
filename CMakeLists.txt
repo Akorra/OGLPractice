@@ -45,13 +45,14 @@ add_subdirectory(
     ${glad2_BINARY_DIR}/cmake
 )
 
-# stb_image
-FetchContent_Declare(
-    stb
-    GIT_REPOSITORY https://github.com/nothings/stb.git
-    GIT_TAG master
+# Create a GLAD loader target for OpenGL 
+glad_add_library(
+    glad_gl_core_46
+    REPRODUCIBLE
+    API gl:core=4.6
 )
-FetchContent_MakeAvailable(stb)
+
+target_link_libraries(oglpractice PRIVATE glad_gl_core_46)
 
 FetchContent_Declare(
     glm
@@ -61,14 +62,29 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(glm)
 
-# Create a GLAD loader target for OpenGL 
-glad_add_library(
-    glad_gl_core_46
-    REPRODUCIBLE
-    API gl:core=4.6
-)
-
-# Link GLM as a dependency
 target_link_libraries(oglpractice PRIVATE glm::glm)
-target_link_libraries(oglpractice PRIVATE glad_gl_core_46)
+
+# stb_image
+FetchContent_Declare(
+    stb
+    GIT_REPOSITORY https://github.com/nothings/stb.git
+    GIT_TAG master
+)
+FetchContent_MakeAvailable(stb)
+
 target_include_directories(oglpractice PRIVATE ${stb_SOURCE_DIR})
+
+# Optional: reduce build size/features
+set(ASSIMP_BUILD_TESTS OFF CACHE BOOL "" FORCE)
+set(ASSIMP_INSTALL OFF CACHE BOOL "" FORCE)
+set(BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
+
+FetchContent_Declare(
+    assimp
+    GIT_REPOSITORY https://github.com/assimp/assimp.git
+    GIT_TAG v5.4.3
+)
+FetchContent_MakeAvailable(assimp)
+
+target_link_libraries(oglpractice PRIVATE assimp)
+
