@@ -75,6 +75,12 @@ int main()
     // configure global opengl state
     glEnable(GL_DEPTH_TEST);
 
+    // build and compile shaders
+    Shader ourShader("simple.vs.glsl", "simple.fs.glsl");
+    // load models
+    // -----------
+    Model ourModel("./resources/objects/backpack/backpack.obj");
+
     // render loop
     unsigned int i=0;
     while (!glfwWindowShouldClose(window))
