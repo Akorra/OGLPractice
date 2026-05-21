@@ -12,6 +12,7 @@
 #include "shader.hpp"
 #include "camera.hpp"
 #include "geometryhelper.hpp"
+#include "materialhelper.hpp"
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 void mouse_callback(GLFWwindow* window, double xpos, double ypos);
@@ -79,7 +80,7 @@ int main()
     // configure global opengl state
     glEnable(GL_DEPTH_TEST);
 
-    Shader lightingShader("./shaders/2.vs.glsl", "./shaders/2.fs.glsl");
+    Shader lightingShader("./shaders/2_maps.vs.glsl", "./shaders/2_maps.fs.glsl");
     Shader lightCubeShader("./shaders/2_light.vs.glsl", "./shaders/2_light.fs.glsl");
 
     // first, configure the cube's VAO (and VBO)
@@ -93,11 +94,16 @@ int main()
     glBufferData(GL_ARRAY_BUFFER, sizeof(cube), cube, GL_STATIC_DRAW);
 
     // position attribute
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)0);
     glEnableVertexAttribArray(0);
 
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3*sizeof(float)));
+    // normal attribute
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(3*sizeof(float)));
     glEnableVertexAttribArray(1);
+
+    // tex coord attribute
+    glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(6*sizeof(float)));
+    glEnableVertexAttribArray(2);
 
     // second, configure the light's VAO (VBO stays the same; the vertices are the same for the light object which is also a 3D cube)
     unsigned int lightCubeVAO;
@@ -107,13 +113,23 @@ int main()
     // we only need to bind to the VBO (to link it with glVertexAttribPointer), no need to fill it; the VBO's data already contains all we need (it's already bound, but we do it again for educational purposes)
     glBindBuffer(GL_ARRAY_BUFFER, VBO);
 
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)0); //< 6 strider since we have to ignore the normals
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)0); //< 8 strider since we have to ignore the normals and tex coords
     glEnableVertexAttribArray(0);
 
     glm::mat3 normalMatrix;
     glm::mat4 projection, view, model;
-    glm::vec3 lightPosition(1.2f, 1.0f, 2.0f), lightColor(1.0f), objectColor(1.0f, 0.5f, 0.31f);
-    glm::vec3 diffuseColor(1.0f), ambientColor(1.0f), specularColor(1.0f);
+    glm::vec3 lightPosition(1.2f, 1.0f, 2.0f), lightAmbient(0.2f), lightDiffuse(0.5f), lightSpecular(1.0f);
+
+    // load textures
+    Material  diffuseMaterial;
+    diffuseMaterial.loadTexture(diffuseMaterial.diffuseMapId, "./textures/container2.png");
+    diffuseMaterial.loadTexture(diffuseMaterial.specularMapId, "./textures/container2_specular.png");
+    
+
+    // shader config
+    lightingShader.use();
+    lightingShader.setInt("material.diffuse",  0);
+    lightingShader.setInt("material.specular", 1);
 
     // render loop
     unsigned int i=0;
@@ -135,29 +151,16 @@ int main()
         lightPosition.y = 2.0f*glm::sin(glm::radians(20.0f*glfwGetTime()));
         lightPosition.z = 0.0f;
 
-        lightColor.x = static_cast<float>(sin(glfwGetTime() * 2.0));
-        lightColor.y = static_cast<float>(sin(glfwGetTime() * 0.7));
-        lightColor.z = static_cast<float>(sin(glfwGetTime() * 1.3));
-
-        diffuseColor = lightColor   * glm::vec3(0.5f); // decrease the influence
-        ambientColor = diffuseColor * glm::vec3(0.2f); // low influence
-
         // be sure to activate shader when setting uniforms/drawing objects
         lightingShader.use();
 
         // light properties
-        lightingShader.setFloat3("light.position", lightPosition);
-        lightingShader.setFloat3("viewPosition",   camera.position);
-        lightingShader.setFloat3("light.ambient",  ambientColor);
-        lightingShader.setFloat3("light.diffuse",  diffuseColor);
-        lightingShader.setFloat3("light.specular", specularColor);
-
-        // material properties
-        unsigned int index = static_cast<unsigned int>(glfwGetTime() / 5.0) % materialCount; //< change ever5 5 secs
-        lightingShader.setFloat3("material.ambient", materials[index].ambient);
-        lightingShader.setFloat3("material.diffuse", materials[index].diffuse);
-        lightingShader.setFloat3("material.specular", materials[index].specular); // specular lighting doesn't have full effect on this object's material
-        lightingShader.setFloat("material.shininess", materials[index].shininess);
+        lightingShader.setFloat3("viewPosition",      camera.position);
+        lightingShader.setFloat3("light.position",    lightPosition);
+        lightingShader.setFloat3("light.ambient",     lightAmbient);
+        lightingShader.setFloat3("light.diffuse",     lightDiffuse);
+        lightingShader.setFloat3("light.specular",    lightSpecular);
+        lightingShader.setFloat("material.shininess", diffuseMaterial.shininess);
 
         // view/projection/world transformations
         projection   = glm::perspective(glm::radians(camera.zoom), (float)SCR_WIDTH / (float)SCR_HEIGHT, NEAR_PLANE, FAR_PLANE);
@@ -169,6 +172,8 @@ int main()
         lightingShader.setMat4("model",        model);
         lightingShader.setMat3("normalMatrix", normalMatrix);
 
+        diffuseMaterial.use();
+
         // render the cube
         glBindVertexArray(cubeVAO);
         glDrawArrays(GL_TRIANGLES, 0, cubeVertCount);
@@ -178,9 +183,9 @@ int main()
         lightCubeShader.setMat4("projection", projection);
         lightCubeShader.setMat4("view", view);
         lightCubeShader.setFloat3("light.position", lightPosition);
-        lightCubeShader.setFloat3("light.ambient",  ambientColor);
-        lightCubeShader.setFloat3("light.diffuse",  diffuseColor);
-        lightCubeShader.setFloat3("light.specular", specularColor);
+        lightCubeShader.setFloat3("light.ambient",  lightAmbient);
+        lightCubeShader.setFloat3("light.diffuse",  lightDiffuse);
+        lightCubeShader.setFloat3("light.specular", lightSpecular);
         
         model = glm::mat4(1.0f);
         model = glm::translate(model, lightPosition);
