@@ -9,6 +9,7 @@ out vec4 FragColor;
 struct Material {
     sampler2D diffuse;
     sampler2D specular;
+    sampler2D emission;
     float     shininess;
 };
 uniform Material material;
@@ -20,8 +21,8 @@ struct Light {
     vec3 specular;
 };
 uniform Light light;
-
-uniform vec3 viewPosition;
+uniform float mixer = 1.0f;
+uniform vec3  viewPosition;
 
 void main()
 {
@@ -31,15 +32,20 @@ void main()
     vec3 norm = normalize(Normal);
     vec3 lightDir = normalize(light.position - FragPosition);
     float diff = max(dot(norm, lightDir), 0.0);
-    vec3 diffuse = light.diffuse * diff * texture(material.diffuse, TexCoords).rgb;
+    vec3 diffuseSample = texture(material.diffuse, TexCoords).rgb;
+    vec3 diffuse       = light.diffuse * diff * diffuseSample;
 
     // specular
     vec3 viewDir = normalize(viewPosition - FragPosition); 
-    vec3 reflectionDir = reflect(-lightDir, norm); //< reflection direction
-    float spec = pow(max(dot(viewDir, reflectionDir), 0.0), material.shininess); //< 32 is the shininess value of highlight (higher -> scatters less reflects more)
-    vec3 specular =  light.specular * spec * texture(material.specular, TexCoords).rgb; //< specular impact (angle between viewer and reflection)
+    vec3 reflectionDir = reflect(-lightDir, norm); 
+    float spec = pow(max(dot(viewDir, reflectionDir), 0.0), material.shininess); 
+    vec3 specularSample =  texture(material.specular, TexCoords).rgb; 
+    vec3 specular       =  light.specular * spec * specularSample; 
+
+    // emmission
+    vec3 emission = step(specularSample, vec3(0.0)) * mixer * texture(material.emission, TexCoords).rgb;
 
     // add light contributes 
-    vec3 result = ambient + diffuse + specular;
+    vec3 result = ambient + diffuse + specular + emission;
     FragColor = vec4(result, 1.0);
 }

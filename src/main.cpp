@@ -124,12 +124,13 @@ int main()
     Material  diffuseMaterial;
     diffuseMaterial.loadTexture(diffuseMaterial.diffuseMapId, "./textures/container2.png");
     diffuseMaterial.loadTexture(diffuseMaterial.specularMapId, "./textures/container2_specular.png");
-    
+    diffuseMaterial.loadTexture(diffuseMaterial.emissionMapId, "./textures/matrix.jpg");
 
     // shader config
     lightingShader.use();
     lightingShader.setInt("material.diffuse",  0);
     lightingShader.setInt("material.specular", 1);
+    lightingShader.setInt("material.emission", 2);
 
     // render loop
     unsigned int i=0;
@@ -161,6 +162,8 @@ int main()
         lightingShader.setFloat3("light.diffuse",     lightDiffuse);
         lightingShader.setFloat3("light.specular",    lightSpecular);
         lightingShader.setFloat("material.shininess", diffuseMaterial.shininess);
+
+        lightingShader.setFloat("mixer", 0.7f + sin(75.f*glm::radians(glfwGetTime()))*0.3f);
 
         // view/projection/world transformations
         projection   = glm::perspective(glm::radians(camera.zoom), (float)SCR_WIDTH / (float)SCR_HEIGHT, NEAR_PLANE, FAR_PLANE);

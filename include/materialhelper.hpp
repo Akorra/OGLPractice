@@ -18,22 +18,28 @@ struct BasicMaterial {
 
 struct Material 
 {
-    uint32_t  diffuseMapId  = INVALID;
-    uint32_t  specularMapId = INVALID;
+    uint32_t  diffuseMapId  = INVALID; // main color source
+    uint32_t  specularMapId = INVALID; // specular highlight strength/absrtion(low)
+    uint32_t  emissionMapId = INVALID; // emissive strength (as if obj's light source)
     float shininess = 32;
 
     Material() = default;
     Material(const Material&) = delete;
     Material& operator=(const Material&) = delete;
     Material(Material&& other) noexcept {
-        this->diffuseMapId = other.diffuseMapId;
-        other.diffuseMapId = INVALID; 
+        this->diffuseMapId  = other.diffuseMapId;
+        this->specularMapId = other.specularMapId;
+        this->emissionMapId = other.emissionMapId;
+        other.diffuseMapId  = INVALID; 
+        other.specularMapId = INVALID; 
+        other.emissionMapId = INVALID; 
     }
 
     ~Material()
     {
         if(diffuseMapId  != INVALID) glDeleteTextures(1, &diffuseMapId);
         if(specularMapId != INVALID) glDeleteTextures(1, &specularMapId);
+        if(emissionMapId != INVALID) glDeleteTextures(1, &emissionMapId);
     }
 
     bool isValid() { return (diffuseMapId != INVALID && specularMapId != INVALID); }
@@ -48,6 +54,9 @@ struct Material
 
         glActiveTexture(GL_TEXTURE0 + 1);
         glBindTexture(GL_TEXTURE_2D, specularMapId);
+
+        glActiveTexture(GL_TEXTURE0 + 2);
+        glBindTexture(GL_TEXTURE_2D, emissionMapId);
     }
 
     static void loadTexture(uint32_t& mapId, const char* path)
