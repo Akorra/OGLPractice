@@ -81,7 +81,7 @@ int main()
     glEnable(GL_DEPTH_TEST);
 
     Shader lightingShader("./shaders/2_maps.vs.glsl", "./shaders/2_maps.fs.glsl");
-    Shader lightCubeShader("./shaders/2_light.vs.glsl", "./shaders/2_light.fs.glsl");
+    Shader lightCubeShader("./shaders/2_directional_light.vs.glsl", "./shaders/2_directional_light.fs.glsl");
 
     // first, configure the cube's VAO (and VBO)
     unsigned int VBO, cubeVAO;
@@ -105,20 +105,9 @@ int main()
     glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(6*sizeof(float)));
     glEnableVertexAttribArray(2);
 
-    // second, configure the light's VAO (VBO stays the same; the vertices are the same for the light object which is also a 3D cube)
-    unsigned int lightCubeVAO;
-    glGenVertexArrays(1, &lightCubeVAO);
-    glBindVertexArray(lightCubeVAO);
-
-    // we only need to bind to the VBO (to link it with glVertexAttribPointer), no need to fill it; the VBO's data already contains all we need (it's already bound, but we do it again for educational purposes)
-    glBindBuffer(GL_ARRAY_BUFFER, VBO);
-
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)0); //< 8 strider since we have to ignore the normals and tex coords
-    glEnableVertexAttribArray(0);
-
     glm::mat3 normalMatrix;
     glm::mat4 projection, view, model;
-    glm::vec3 lightPosition(1.2f, 1.0f, 2.0f), lightAmbient(0.2f), lightDiffuse(0.5f), lightSpecular(1.0f);
+    glm::vec3 lightDirection(-0.2f, -1.0f, -0.3f), lightPosition(1.2f, 1.0f, 2.0f), lightAmbient(0.2f), lightDiffuse(0.5f), lightSpecular(1.0f);
 
     // load textures
     Material  diffuseMaterial;
@@ -157,7 +146,7 @@ int main()
 
         // light properties
         lightingShader.setFloat3("viewPosition",      camera.position);
-        lightingShader.setFloat3("light.position",    lightPosition);
+        lightingShader.setFloat3("light.direction",   lightDirection);
         lightingShader.setFloat3("light.ambient",     lightAmbient);
         lightingShader.setFloat3("light.diffuse",     lightDiffuse);
         lightingShader.setFloat3("light.specular",    lightSpecular);
@@ -172,32 +161,19 @@ int main()
         normalMatrix = glm::mat3(glm::transpose(glm::inverse(model)));
         lightingShader.setMat4("projection",   projection);
         lightingShader.setMat4("view",         view);
-        lightingShader.setMat4("model",        model);
         lightingShader.setMat3("normalMatrix", normalMatrix);
 
         diffuseMaterial.use();
 
-        // render the cube
+        // render the cubes
         glBindVertexArray(cubeVAO);
-        glDrawArrays(GL_TRIANGLES, 0, cubeVertCount);
+        for(unsigned int i=0; i<10; ++i)
+        {
+            lightingShader.setMat4("model", 
+                glm::rotate(glm::translate(model, cubePositions[i]), glm::radians(20.0f*i), glm::vec3(1.0f, 0.3f, 0.5f)));
 
-        // also draw the lamp object
-        lightCubeShader.use();
-        lightCubeShader.setMat4("projection", projection);
-        lightCubeShader.setMat4("view", view);
-        lightCubeShader.setFloat3("light.position", lightPosition);
-        lightCubeShader.setFloat3("light.ambient",  lightAmbient);
-        lightCubeShader.setFloat3("light.diffuse",  lightDiffuse);
-        lightCubeShader.setFloat3("light.specular", lightSpecular);
-        
-        model = glm::mat4(1.0f);
-        model = glm::translate(model, lightPosition);
-        model = glm::scale(model, glm::vec3(0.2f)); // a smaller cube
-        
-        lightCubeShader.setMat4("model", model);
-
-        glBindVertexArray(lightCubeVAO);
-        glDrawArrays(GL_TRIANGLES, 0, cubeVertCount);
+            glDrawArrays(GL_TRIANGLES, 0, cubeVertCount);
+        }
 
         // glfw: swap buffers and poll IO events (keys pressed/released, mouse moved etc.)
         glfwSwapBuffers(window);
@@ -206,7 +182,6 @@ int main()
 
     // optional: de-allocate all resources once they've outlived their purpose:
     glDeleteVertexArrays(1, &cubeVAO);
-    glDeleteVertexArrays(1, &lightCubeVAO);
     glDeleteBuffers(1, &VBO);
 
     glfwTerminate();
