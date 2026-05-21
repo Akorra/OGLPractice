@@ -80,8 +80,8 @@ int main()
     // configure global opengl state
     glEnable(GL_DEPTH_TEST);
 
-    Shader lightingShader("./shaders/2_maps.vs.glsl", "./shaders/2_maps.fs.glsl");
-    Shader lightCubeShader("./shaders/2_directional_light.vs.glsl", "./shaders/2_directional_light.fs.glsl");
+    Shader lightingShader("./shaders/2_maps.vs.glsl", "./shaders/2_spot_light.fs.glsl");
+    Shader lightCubeShader("./shaders/2_light.vs.glsl", "./shaders/2_light.fs.glsl");
 
     // first, configure the cube's VAO (and VBO)
     unsigned int VBO, cubeVAO;
@@ -104,6 +104,16 @@ int main()
     // tex coord attribute
     glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(6*sizeof(float)));
     glEnableVertexAttribArray(2);
+
+    // second, configure the light's VAO (VBO stays the same; the vertices are the same for the light object which is also a 3D cube)
+    unsigned int lightCubeVAO;
+    glGenVertexArrays(1, &lightCubeVAO);
+    glBindVertexArray(lightCubeVAO);
+
+    glBindBuffer(GL_ARRAY_BUFFER, VBO);
+    // note that we update the lamp's position attribute's stride to reflect the updated buffer data
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)0);
+    glEnableVertexAttribArray(0);
 
     glm::mat3 normalMatrix;
     glm::mat4 projection, view, model;
@@ -137,22 +147,28 @@ int main()
         glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        lightPosition.x = 2.0f*glm::cos(glm::radians(20.0f*glfwGetTime()));
-        lightPosition.y = 2.0f*glm::sin(glm::radians(20.0f*glfwGetTime()));
-        lightPosition.z = 0.0f;
+        //lightPosition.x = 2.0f*glm::cos(glm::radians(20.0f*glfwGetTime()));
+        //lightPosition.y = 2.0f*glm::sin(glm::radians(20.0f*glfwGetTime()));
+        //lightPosition.z = 0.0f;
 
         // be sure to activate shader when setting uniforms/drawing objects
         lightingShader.use();
 
         // light properties
         lightingShader.setFloat3("viewPosition",      camera.position);
-        lightingShader.setFloat3("light.direction",   lightDirection);
+        lightingShader.setFloat3("light.position",    camera.position);
+        lightingShader.setFloat3("light.direction",   camera.front);
+        lightingShader.setFloat("light.cutoff",       glm::cos(glm::radians(12.5f)));
         lightingShader.setFloat3("light.ambient",     lightAmbient);
         lightingShader.setFloat3("light.diffuse",     lightDiffuse);
         lightingShader.setFloat3("light.specular",    lightSpecular);
+        lightingShader.setFloat("light.constant",     1.0f);
+        lightingShader.setFloat("light.linear",       0.09f);
+        lightingShader.setFloat("light.quadratic",    0.032f);
         lightingShader.setFloat("material.shininess", diffuseMaterial.shininess);
+        
 
-        lightingShader.setFloat("mixer", 0.7f + sin(75.f*glm::radians(glfwGetTime()))*0.3f);
+        lightingShader.setFloat("mixer", 0.0f);//0.7f + sin(75.f*glm::radians(glfwGetTime()))*0.3f);
 
         // view/projection/world transformations
         projection   = glm::perspective(glm::radians(camera.zoom), (float)SCR_WIDTH / (float)SCR_HEIGHT, NEAR_PLANE, FAR_PLANE);
@@ -174,6 +190,23 @@ int main()
 
             glDrawArrays(GL_TRIANGLES, 0, cubeVertCount);
         }
+
+        /*
+        // also draw the lamp object
+        lightCubeShader.use();
+        lightCubeShader.setMat4("projection", projection);
+        lightCubeShader.setMat4("view", view); 
+        lightCubeShader.setFloat3("light.ambient",   lightAmbient);
+        lightCubeShader.setFloat3("light.diffuse",   lightDiffuse);
+        lightCubeShader.setFloat3("light.specular",  lightSpecular);
+        model = glm::mat4(1.0f);
+        model = glm::translate(model, lightPosition);
+        model = glm::scale(model, glm::vec3(0.2f)); // a smaller cube
+        lightCubeShader.setMat4("model", model);
+
+        glBindVertexArray(lightCubeVAO);
+        glDrawArrays(GL_TRIANGLES, 0, cubeVertCount);
+        /**/
 
         // glfw: swap buffers and poll IO events (keys pressed/released, mouse moved etc.)
         glfwSwapBuffers(window);
