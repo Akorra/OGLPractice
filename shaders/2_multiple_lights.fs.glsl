@@ -84,6 +84,8 @@ vec3 CalcPointLight(PointLight light, vec3 normal, vec3 fragPos, vec3 viewDir)
     return (ambient + diffuse + specular);
 }
 
+uniform vec3 viewPosition;
+
 void main()
 {
     vec3 norm    = normalize(Normal);
@@ -95,9 +97,6 @@ void main()
     // 2. spotlight contributions
     for(int i=0; i<NR_POINT_LIGHTS; ++i)
         result += CalcPointLight(pointLights[i], norm, FragPosition, viewDir);
-
-    // emiting fragments:
-    result += 0.0*material.emission;
 
     FragColor = vec4(result, 1.0);
 }

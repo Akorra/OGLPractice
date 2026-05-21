@@ -138,6 +138,13 @@ int main()
     lightingShader.setInt("material.diffuse",  0);
     lightingShader.setInt("material.specular", 1);
     lightingShader.setInt("material.emission", 2);
+    lightingShader.setFloat("material.shininess", diffuseMaterial.shininess);
+
+    // add static lights:
+    lightingShader.addDirectionalLight("dirLight", &dirlight);
+    for(int i=0; i<4; ++i)
+        lightingShader.addPointLight("pointLights[" + std::to_string(i) + "]", &(pointlights[i]));
+
 
     // render loop
     unsigned int i=0;
@@ -155,29 +162,11 @@ int main()
         glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        //lightPosition.x = 2.0f*glm::cos(glm::radians(20.0f*glfwGetTime()));
-        //lightPosition.y = 2.0f*glm::sin(glm::radians(20.0f*glfwGetTime()));
-        //lightPosition.z = 0.0f;
 
         // be sure to activate shader when setting uniforms/drawing objects
         lightingShader.use();
-
-        // light properties
-        lightingShader.setFloat3("viewPosition",      camera.position);
-        lightingShader.setFloat3("light.position",    camera.position);
-        lightingShader.setFloat3("light.direction",   camera.front);
-        lightingShader.setFloat("light.cutoff",       glm::cos(glm::radians(12.5f)));
-        lightingShader.setFloat("light.outerCutoff",  glm::cos(glm::radians(17.5f)));
-        lightingShader.setFloat3("light.ambient",     lightAmbient);
-        lightingShader.setFloat3("light.diffuse",     lightDiffuse);
-        lightingShader.setFloat3("light.specular",    lightSpecular);
-        lightingShader.setFloat("light.constant",     1.0f);
-        lightingShader.setFloat("light.linear",       0.09f);
-        lightingShader.setFloat("light.quadratic",    0.032f);
-        lightingShader.setFloat("material.shininess", diffuseMaterial.shininess);
-        
-
-        lightingShader.setFloat("mixer", 0.0f);//0.7f + sin(75.f*glm::radians(glfwGetTime()))*0.3f);
+        lightingShader.setFloat3("viewPosition", camera.position);
+        //lightingShader.setFloat("mixer", 0.0f);//0.7f + sin(75.f*glm::radians(glfwGetTime()))*0.3f);
 
         // view/projection/world transformations
         projection   = glm::perspective(glm::radians(camera.zoom), (float)SCR_WIDTH / (float)SCR_HEIGHT, NEAR_PLANE, FAR_PLANE);
@@ -196,26 +185,29 @@ int main()
         {
             lightingShader.setMat4("model", 
                 glm::rotate(glm::translate(model, cubePositions[i]), glm::radians(20.0f*i), glm::vec3(1.0f, 0.3f, 0.5f)));
-
             glDrawArrays(GL_TRIANGLES, 0, cubeVertCount);
         }
 
-        /*
         // also draw the lamp object
         lightCubeShader.use();
         lightCubeShader.setMat4("projection", projection);
         lightCubeShader.setMat4("view", view); 
-        lightCubeShader.setFloat3("light.ambient",   lightAmbient);
-        lightCubeShader.setFloat3("light.diffuse",   lightDiffuse);
-        lightCubeShader.setFloat3("light.specular",  lightSpecular);
-        model = glm::mat4(1.0f);
-        model = glm::translate(model, lightPosition);
-        model = glm::scale(model, glm::vec3(0.2f)); // a smaller cube
-        lightCubeShader.setMat4("model", model);
 
         glBindVertexArray(lightCubeVAO);
-        glDrawArrays(GL_TRIANGLES, 0, cubeVertCount);
-        /**/
+        for(unsigned int i=0; i<4; ++i)
+        {
+            lightCubeShader.setFloat3("light.ambient",  pointlights[i].ambient);
+            lightCubeShader.setFloat3("light.diffuse",  pointlights[i].diffuse);
+            lightCubeShader.setFloat3("light.specular", pointlights[i].specular);
+            
+            model = glm::mat4(1.0f);
+            model = glm::translate(model,  pointlights[i].position);
+            model = glm::scale(model, glm::vec3(0.2f)); // a smaller cube
+            
+            lightCubeShader.setMat4("model", model);
+
+            glDrawArrays(GL_TRIANGLES, 0, cubeVertCount);
+        }
 
         // glfw: swap buffers and poll IO events (keys pressed/released, mouse moved etc.)
         glfwSwapBuffers(window);
