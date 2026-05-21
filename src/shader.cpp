@@ -37,7 +37,7 @@ Shader::Shader(const char *vertexPath, const char *fragmentPath)
     const char* vShaderCode = vertexCode.c_str();
     const char * fShaderCode = fragmentCode.c_str();
     // 2. compile shaders
-    unsigned int vertex, fragment;
+    uint32_t vertex, fragment;
     // vertex shader
     vertex = glCreateShader(GL_VERTEX_SHADER);
     glShaderSource(vertex, 1, &vShaderCode, NULL);
@@ -144,7 +144,7 @@ void Shader::addSpotLight(const std::string &name, SpotLight* light) const
     setFloat(name + ".outerCutoff", light->outerCutoff);
 }
 
-void Shader::checkCompileErrors(unsigned int shader, std::string type)
+void Shader::checkCompileErrors(uint32_t shader, std::string type)
 {
     int success;
     char infoLog[1024];

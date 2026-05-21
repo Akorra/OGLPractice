@@ -13,7 +13,7 @@ class Shader
 {
 public:
     // the program ID
-    unsigned int ID;
+    uint32_t ID;
   
     // constructor reads and builds the shader
     Shader(const char* vertexPath, const char* fragmentPath);
@@ -36,5 +36,5 @@ public:
     void addSpotLight(const std::string &name, struct SpotLight* light) const;
 
 private:
-    void checkCompileErrors(unsigned int shader, std::string type);
+    void checkCompileErrors(uint32_t shader, std::string type);
 };
