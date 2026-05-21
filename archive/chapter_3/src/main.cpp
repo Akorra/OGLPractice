@@ -6,13 +6,8 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
-//#define STB_IMAGE_IMPLEMENTATION
-#include <stb_image.h>
-
-//#include "model.hpp"
-#include "shader.hpp"
+#include "model.hpp"
 #include "camera.hpp"
-#include "utils.h"
 
 #include <glad/gl.h>
 #include <GLFW/glfw3.h>
@@ -22,11 +17,10 @@ void mouse_callback(GLFWwindow* window, double xpos, double ypos);
 void mouse_button_callback(GLFWwindow* window, int button, int action, int mods);
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
 void processInput(GLFWwindow *window);
-uint32_t loadTexture(char const *path);
 
 // settings
-const uint32_t SCR_WIDTH  = 800;
-const uint32_t SCR_HEIGHT = 600;
+const unsigned int SCR_WIDTH  = 800;
+const unsigned int SCR_HEIGHT = 600;
 const float        NEAR_PLANE = 0.1f;
 const float        FAR_PLANE  = 100.0f;
 
@@ -35,13 +29,13 @@ Camera camera(glm::vec3(0.0f, 0.0f, 3.0f));
 float  lastX = SCR_WIDTH/2.0f;  // center x
 float  lastY = SCR_HEIGHT/2.0f; // center y
 
-// mouse io
-bool mouseDown  = false;
-bool firstMouse = true;
-
 //time
 float deltaTime = 0.0f;
 float lastFrame = 0.0f;
+
+// mouse io
+bool mouseDown  = false;
+bool firstMouse = true;
 
 int main()
 {
@@ -80,52 +74,21 @@ int main()
 
     // configure global opengl state
     glEnable(GL_DEPTH_TEST);
-    glDepthFunc(GL_LESS);
 
     // build and compile shaders
-    Shader shader("./shaders/depthTest.vs.glsl", "./shaders/depthTest.fs.glsl");
+    Shader ourShader("./shaders/simple.vs.glsl", "./shaders/diffuse.fs.glsl");
     
-    // cube vao
-    uint32_t cubeVAO, cubeVBO;
-    glGenVertexArrays(1, &cubeVAO);
-    glGenBuffers(1, &cubeVBO);
-    // upload
-    glBindVertexArray(cubeVAO);
-    glBindBuffer(GL_ARRAY_BUFFER, cubeVBO);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(cube), &cube, GL_STATIC_DRAW);
-    glEnableVertexAttribArray(0);
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5*sizeof(float), (void*)0);
-    glEnableVertexAttribArray(1);
-    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5*sizeof(float), (void*)(3*sizeof(float)));
+    // load models
+    Model ourModel("./resources/objects/backpack/backpack.obj");
 
-    // plane vao
-    uint32_t planeVAO, planeVBO;
-    glGenVertexArrays(1, &planeVAO);
-    glGenBuffers(1, &planeVBO);
-    // upload
-    glBindVertexArray(planeVAO);
-    glBindBuffer(GL_ARRAY_BUFFER, planeVBO);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(plane), &plane, GL_STATIC_DRAW);
-    glEnableVertexAttribArray(0);
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5*sizeof(float), (void*)0);
-    glEnableVertexAttribArray(1);
-    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5*sizeof(float), (void*)(3*sizeof(float)));
-
-    glBindVertexArray(0);
-
-    // load textures
-    uint32_t cubeTexture  = loadTexture("./resources/textures/container2.png");
-    uint32_t floorTexture = loadTexture("./resources/textures/wall.jpg");
+    glm::mat4 projection(1.0f), view(1.0f);
+    glm::mat4 model = glm::scale(glm::translate(glm::mat4(1.0f), glm::vec3(0.0f)), glm::vec3(1.0f)); // scale it down 
 
     // draw in wireframe
     //glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
-    shader.use();
-    shader.setInt("texture1", 0);
-
-    glm::mat4 projection(1.0f), view(1.0f), model(1.0f);
-
     // render loop
+    unsigned int i=0;
     while (!glfwWindowShouldClose(window))
     {
         // per-frame time logic
@@ -137,34 +100,18 @@ int main()
         processInput(window);
 
         // render
-        glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
+        glClearColor(0.05f, 0.05f, 0.05f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        shader.use();
-        view = camera.GetViewMatrix();
-        projection = glm::perspective(glm::radians(camera.zoom), (float)SCR_WIDTH / (float)SCR_HEIGHT, NEAR_PLANE, FAR_PLANE);
-        shader.setMat4("projection", projection);
-        shader.setMat4("view",       view);
-        
-        // cubes
-        glBindVertexArray(cubeVAO);
-        glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, cubeTexture);
-        // cube 1
-        model = glm::translate(glm::mat4(1.0f), glm::vec3(-1.0f, 0.0f, -1.0f));
-        shader.setMat4("model", model);
-        glDrawArrays(GL_TRIANGLES, 0, cubeVertCount);
-        //cube 2
-        model = glm::translate(glm::mat4(1.0f), glm::vec3(2.0f, 0.0f, 0.0f));
-        shader.setMat4("model", model);
-        glDrawArrays(GL_TRIANGLES, 0, cubeVertCount);
+        ourShader.use();
 
-        // floor
-        glBindVertexArray(planeVAO);
-        glBindTexture(GL_TEXTURE_2D, floorTexture);
-        shader.setMat4("model", glm::mat4(1.0f));
-        glDrawArrays(GL_TRIANGLES, 0, planeVertCount);
-        glBindVertexArray(0);
+        projection = glm::perspective(glm::radians(camera.zoom), (float)SCR_WIDTH / (float) SCR_HEIGHT, NEAR_PLANE, FAR_PLANE);
+        view       = camera.GetViewMatrix();
+        ourShader.setMat4("projection", projection);
+        ourShader.setMat4("view",       view);
+        ourShader.setMat4("model",      model);
+
+        ourModel.Draw(ourShader);
 
         // glfw: swap buffers and poll IO events (keys pressed/released, mouse moved etc.)
         glfwSwapBuffers(window);
@@ -228,43 +175,4 @@ void mouse_callback(GLFWwindow* window, double xposIn, double yposIn)
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
 {
     camera.ProcessMouseScroll(static_cast<float>(yoffset));
-}
-
-// utility function for loading a 2D texture from file
-// ---------------------------------------------------
-uint32_t loadTexture(char const *path)
-{
-    uint32_t textureID;
-    glGenTextures(1, &textureID);
-
-    int width, height, nrComponents;
-    unsigned char *data = stbi_load(path, &width, &height, &nrComponents, 0);
-    if (data)
-    {
-        GLenum format;
-        if (nrComponents == 1)
-            format = GL_RED;
-        else if (nrComponents == 3)
-            format = GL_RGB;
-        else if (nrComponents == 4)
-            format = GL_RGBA;
-
-        glBindTexture(GL_TEXTURE_2D, textureID);
-        glTexImage2D(GL_TEXTURE_2D, 0, format, width, height, 0, format, GL_UNSIGNED_BYTE, data);
-        glGenerateMipmap(GL_TEXTURE_2D);
-
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-
-        stbi_image_free(data);
-    }
-    else
-    {
-        std::cout << "Texture failed to load at path: " << path << std::endl;
-        stbi_image_free(data);
-    }
-
-    return textureID;
 }
