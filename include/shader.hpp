@@ -31,6 +31,10 @@ public:
     void setMat3(const std::string &name, const glm::mat3& transform) const;
     void setMat4(const std::string &name, const glm::mat4& transform) const;
 
+    void addDirectionalLight(const std::string &name, struct DirectionalLight* light) const;
+    void addPointLight(const std::string &name, struct PointLight* light) const;
+    void addSpotLight(const std::string &name, struct SpotLight* light) const;
+
 private:
     void checkCompileErrors(unsigned int shader, std::string type);
 };

@@ -2,6 +2,8 @@
 
 #include <glm/gtc/type_ptr.hpp>
 
+#include "lighthelper.hpp"
+
 Shader::Shader(const char *vertexPath, const char *fragmentPath)
 {
     // 1. retrieve the vertex/fragment source code from filePath
@@ -107,6 +109,39 @@ void Shader::setMat3(const std::string &name, const glm::mat3& transform) const
 void Shader::setMat4(const std::string &name, const glm::mat4& transform) const
 {
     glUniformMatrix4fv(glGetUniformLocation(ID, name.c_str()), 1, GL_FALSE, glm::value_ptr(transform));
+}
+
+void Shader::addDirectionalLight(const std::string &name, DirectionalLight* light) const
+{
+    setFloat3(name + ".direction", light->direction);
+    setFloat3(name + ".ambient",   light->ambient);
+    setFloat3(name + ".diffuse",   light->diffuse);
+    setFloat3(name + ".specular",  light->specular);
+}
+
+void Shader::addPointLight(const std::string &name, PointLight* light) const
+{
+    setFloat3(name + ".position", light->position);
+    setFloat3(name + ".ambient",  light->ambient);
+    setFloat3(name + ".diffuse",  light->diffuse);
+    setFloat3(name + ".specular", light->specular);
+    setFloat(name + ".constant",  light->constant);
+    setFloat(name + ".linear",    light->linear);
+    setFloat(name + ".quadratic", light->quadratic);
+}
+
+void Shader::addSpotLight(const std::string &name, SpotLight* light) const
+{
+    setFloat3(name + ".position",   light->position);
+    setFloat3(name + ".direction",  light->direction);
+    setFloat3(name + ".ambient",    light->ambient);
+    setFloat3(name + ".diffuse",    light->diffuse);
+    setFloat3(name + ".specular",   light->specular);
+    setFloat(name + ".constant",    light->constant);
+    setFloat(name + ".linear",      light->linear);
+    setFloat(name + ".quadratic",   light->quadratic);
+    setFloat(name + ".cutoff",      light->innerCutoff);
+    setFloat(name + ".outerCutoff", light->outerCutoff);
 }
 
 void Shader::checkCompileErrors(unsigned int shader, std::string type)

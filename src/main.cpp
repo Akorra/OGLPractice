@@ -1,7 +1,4 @@
 
-#include <glad/gl.h>
-#include <GLFW/glfw3.h>
-
 #include <iostream>
 
 #define GLM_ENABLE_EXPERIMENTAL
@@ -13,6 +10,10 @@
 #include "camera.hpp"
 #include "geometryhelper.hpp"
 #include "materialhelper.hpp"
+#include "lighthelper.hpp"
+
+#include <glad/gl.h>
+#include <GLFW/glfw3.h>
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 void mouse_callback(GLFWwindow* window, double xpos, double ypos);
@@ -80,7 +81,7 @@ int main()
     // configure global opengl state
     glEnable(GL_DEPTH_TEST);
 
-    Shader lightingShader("./shaders/2_maps.vs.glsl", "./shaders/2_smooth_spot_light.fs.glsl");
+    Shader lightingShader("./shaders/2_maps.vs.glsl", "./shaders/2_multiple_lights.fs.glsl");
     Shader lightCubeShader("./shaders/2_light.vs.glsl", "./shaders/2_light.fs.glsl");
 
     // first, configure the cube's VAO (and VBO)
@@ -124,6 +125,13 @@ int main()
     diffuseMaterial.loadTexture(diffuseMaterial.diffuseMapId, "./textures/container2.png");
     diffuseMaterial.loadTexture(diffuseMaterial.specularMapId, "./textures/container2_specular.png");
     diffuseMaterial.loadTexture(diffuseMaterial.emissionMapId, "./textures/matrix.jpg");
+
+    DirectionalLight dirlight; // use defaults
+    PointLight       pointlights[4]; // also build defaults
+
+    // change spotlight positions
+    for(int i=0; i<4; ++i)
+        pointlights[i].position = pointLightPositions[i];
 
     // shader config
     lightingShader.use();
