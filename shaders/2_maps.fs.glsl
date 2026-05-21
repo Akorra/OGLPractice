@@ -25,19 +25,19 @@ uniform vec3 viewPosition;
 
 void main()
 {
-    vec3 ambient = light.ambient * vec3(texture(material.diffuse, TexCoords));
+    vec3 ambient = light.ambient * texture(material.diffuse, TexCoords).rgb;
 
     // diffuse
     vec3 norm = normalize(Normal);
     vec3 lightDir = normalize(light.position - FragPosition);
     float diff = max(dot(norm, lightDir), 0.0);
-    vec3 diffuse = light.diffuse * diff * vec3(texture(material.diffuse, TexCoords));
+    vec3 diffuse = light.diffuse * diff * texture(material.diffuse, TexCoords).rgb;
 
     // specular
     vec3 viewDir = normalize(viewPosition - FragPosition); 
     vec3 reflectionDir = reflect(-lightDir, norm); //< reflection direction
     float spec = pow(max(dot(viewDir, reflectionDir), 0.0), material.shininess); //< 32 is the shininess value of highlight (higher -> scatters less reflects more)
-    vec3 specular =  light.specular * spec * vec3(texture(material.specular, TexCoords)); //< specular impact (angle between viewer and reflection)
+    vec3 specular =  light.specular * spec * texture(material.specular, TexCoords).rgb; //< specular impact (angle between viewer and reflection)
 
     // add light contributes 
     vec3 result = ambient + diffuse + specular;
