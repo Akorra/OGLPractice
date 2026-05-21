@@ -1,8 +1,12 @@
 #include "shader.hpp"
 
+#include <glad/gl.h> // include glad to get all the required OpenGL headers
+
 #include <glm/gtc/type_ptr.hpp>
 
-#include "lighthelper.hpp"
+#include <fstream>
+#include <sstream>
+#include <iostream>
 
 Shader::Shader(const char *vertexPath, const char *fragmentPath)
 {
@@ -34,26 +38,32 @@ Shader::Shader(const char *vertexPath, const char *fragmentPath)
     {
         std::cout << "ERROR::SHADER::FILE_NOT_SUCCESSFULLY_READ: " << e.what() << std::endl;
     }
+
     const char* vShaderCode = vertexCode.c_str();
     const char * fShaderCode = fragmentCode.c_str();
+    
     // 2. compile shaders
     uint32_t vertex, fragment;
+    
     // vertex shader
     vertex = glCreateShader(GL_VERTEX_SHADER);
     glShaderSource(vertex, 1, &vShaderCode, NULL);
     glCompileShader(vertex);
     checkCompileErrors(vertex, "VERTEX");
+    
     // fragment Shader
     fragment = glCreateShader(GL_FRAGMENT_SHADER);
     glShaderSource(fragment, 1, &fShaderCode, NULL);
     glCompileShader(fragment);
     checkCompileErrors(fragment, "FRAGMENT");
+    
     // shader Program
     ID = glCreateProgram();
     glAttachShader(ID, vertex);
     glAttachShader(ID, fragment);
     glLinkProgram(ID);
     checkCompileErrors(ID, "PROGRAM");
+    
     // delete the shaders as they're linked into our program now and no longer necessary
     glDeleteShader(vertex);
     glDeleteShader(fragment);
@@ -86,62 +96,49 @@ void Shader::setFloat(const std::string &name, float value) const
     glUniform1f(glGetUniformLocation(ID, name.c_str()), value);
 }
 
-void Shader::setFloat2(const std::string &name, const glm::vec2& v) const
+void Shader::setVec2(const std::string &name, float x, float y) const
 {
-    glUniform2f(glGetUniformLocation(ID, name.c_str()), v.x, v.y);
+    glUniform2f(glGetUniformLocation(ID, name.c_str()), x, y);
 }
 
-void Shader::setFloat3(const std::string &name, const glm::vec3& v) const
+void Shader::setVec3(const std::string &name, float x, float y, float z) const
 {
-    glUniform3f(glGetUniformLocation(ID, name.c_str()), v.x, v.y, v.z);
+    glUniform3f(glGetUniformLocation(ID, name.c_str()), x, y, z);
 }
 
-void Shader::setFloat4(const std::string &name, const glm::vec4& v) const
+void Shader::setVec4(const std::string &name, float x, float y, float z, float w) const
 {
-    glUniform4f(glGetUniformLocation(ID, name.c_str()), v.x, v.y, v.z, v.w);
+    glUniform4f(glGetUniformLocation(ID, name.c_str()), x, y, z, w);
 }
 
-void Shader::setMat3(const std::string &name, const glm::mat3& transform) const
+void Shader::setVec2(const std::string &name, const glm::vec2& value) const
 {
-    glUniformMatrix3fv(glGetUniformLocation(ID, name.c_str()), 1, GL_FALSE, glm::value_ptr(transform));
+    glUniform2fv(glGetUniformLocation(ID, name.c_str()), 1, &value[0]);
 }
 
-void Shader::setMat4(const std::string &name, const glm::mat4& transform) const
+void Shader::setVec3(const std::string &name, const glm::vec3& value) const
 {
-    glUniformMatrix4fv(glGetUniformLocation(ID, name.c_str()), 1, GL_FALSE, glm::value_ptr(transform));
+    glUniform3fv(glGetUniformLocation(ID, name.c_str()), 1, &value[0]);
 }
 
-void Shader::addDirectionalLight(const std::string &name, DirectionalLight* light) const
+void Shader::setVec4(const std::string &name, const glm::vec4& value) const
 {
-    setFloat3(name + ".direction", light->direction);
-    setFloat3(name + ".ambient",   light->ambient);
-    setFloat3(name + ".diffuse",   light->diffuse);
-    setFloat3(name + ".specular",  light->specular);
+    glUniform4fv(glGetUniformLocation(ID, name.c_str()), 1, &value[0]);
 }
 
-void Shader::addPointLight(const std::string &name, PointLight* light) const
+void Shader::setMat2(const std::string &name, const glm::mat2& value) const
 {
-    setFloat3(name + ".position", light->position);
-    setFloat3(name + ".ambient",  light->ambient);
-    setFloat3(name + ".diffuse",  light->diffuse);
-    setFloat3(name + ".specular", light->specular);
-    setFloat(name + ".constant",  light->constant);
-    setFloat(name + ".linear",    light->linear);
-    setFloat(name + ".quadratic", light->quadratic);
+    glUniformMatrix2fv(glGetUniformLocation(ID, name.c_str()), 1, GL_FALSE, &value[0][0]);
 }
 
-void Shader::addSpotLight(const std::string &name, SpotLight* light) const
+void Shader::setMat3(const std::string &name, const glm::mat3& value) const
 {
-    setFloat3(name + ".position",   light->position);
-    setFloat3(name + ".direction",  light->direction);
-    setFloat3(name + ".ambient",    light->ambient);
-    setFloat3(name + ".diffuse",    light->diffuse);
-    setFloat3(name + ".specular",   light->specular);
-    setFloat(name + ".constant",    light->constant);
-    setFloat(name + ".linear",      light->linear);
-    setFloat(name + ".quadratic",   light->quadratic);
-    setFloat(name + ".cutoff",      light->innerCutoff);
-    setFloat(name + ".outerCutoff", light->outerCutoff);
+    glUniformMatrix3fv(glGetUniformLocation(ID, name.c_str()), 1, GL_FALSE, &value[0][0]);
+}
+
+void Shader::setMat4(const std::string &name, const glm::mat4& value) const
+{
+    glUniformMatrix4fv(glGetUniformLocation(ID, name.c_str()), 1, GL_FALSE, &value[0][0]);
 }
 
 void Shader::checkCompileErrors(uint32_t shader, std::string type)
