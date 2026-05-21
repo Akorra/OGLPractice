@@ -37,7 +37,25 @@ class Mesh
 public:
     Mesh(std::vector<Vertex> v, std::vector<uint32_t> i, std::vector<Texture> t) 
         : vertices(std::move(v)), indices(std::move(i)), textures(std::move(t)) { setupMesh(); }
-    ~Mesh() = default;
+    ~Mesh()
+    {
+        glDeleteVertexArrays(1, &VAO);
+        glDeleteBuffers(1, &VBO);
+        glDeleteBuffers(1, &EBO);
+    }
+
+    // Delete copy, add move
+    Mesh(const Mesh&) = delete;
+    Mesh& operator=(const Mesh&) = delete;
+
+    Mesh(Mesh&& other) noexcept
+        : vertices(std::move(other.vertices)),
+        indices(std::move(other.indices)),
+        textures(std::move(other.textures)),
+        VAO(other.VAO), VBO(other.VBO), EBO(other.EBO)
+    {
+        other.VAO = other.VBO = other.EBO = 0; // prevent double-delete
+    }
 
     void draw(Shader &shader) 
     {

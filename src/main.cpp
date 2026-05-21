@@ -6,7 +6,7 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
-#include "mesh.hpp"
+#include "model.hpp"
 #include "camera.hpp"
 
 #include <glad/gl.h>
@@ -76,10 +76,16 @@ int main()
     glEnable(GL_DEPTH_TEST);
 
     // build and compile shaders
-    Shader ourShader("simple.vs.glsl", "simple.fs.glsl");
+    Shader ourShader("./shaders/simple.vs.glsl", "./shaders/diffuse.fs.glsl");
+    
     // load models
-    // -----------
     Model ourModel("./resources/objects/backpack/backpack.obj");
+
+    glm::mat4 projection(1.0f), view(1.0f);
+    glm::mat4 model = glm::scale(glm::translate(glm::mat4(1.0f), glm::vec3(0.0f)), glm::vec3(1.0f)); // scale it down 
+
+    // draw in wireframe
+    //glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
     // render loop
     unsigned int i=0;
@@ -97,6 +103,15 @@ int main()
         glClearColor(0.05f, 0.05f, 0.05f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+        ourShader.use();
+
+        projection = glm::perspective(glm::radians(camera.zoom), (float)SCR_WIDTH / (float) SCR_HEIGHT, NEAR_PLANE, FAR_PLANE);
+        view       = camera.GetViewMatrix();
+        ourShader.setMat4("projection", projection);
+        ourShader.setMat4("view",       view);
+        ourShader.setMat4("model",      model);
+
+        ourModel.Draw(ourShader);
 
         // glfw: swap buffers and poll IO events (keys pressed/released, mouse moved etc.)
         glfwSwapBuffers(window);

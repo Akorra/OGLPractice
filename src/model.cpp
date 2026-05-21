@@ -19,6 +19,8 @@ unsigned int TextureFromFile(const char *path, const std::string &directory, boo
     std::string filename = std::string(path);
     filename = directory + '/' + filename;
 
+    std::cout << "Loading texture: " << filename << std::endl;
+
     unsigned int textureID;
     glGenTextures(1, &textureID);
 
@@ -70,7 +72,8 @@ void Model::LoadModel(const std::string &path)
     // read file via ASSIMP
     Assimp::Importer importer;
     
-    const aiScene* scene = importer.ReadFile(path, aiProcess_Triangulate | aiProcess_GenSmoothNormals | aiProcess_FlipUVs | aiProcess_CalcTangentSpace);
+    //const aiScene* scene = importer.ReadFile(path, aiProcess_Triangulate | aiProcess_GenSmoothNormals | aiProcess_FlipUVs | aiProcess_CalcTangentSpace);
+    const aiScene* scene = importer.ReadFile(path, aiProcess_Triangulate | aiProcess_GenSmoothNormals | aiProcess_CalcTangentSpace);
     
     // check for errors
     if(!scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode) // if is Not Zero
@@ -80,7 +83,7 @@ void Model::LoadModel(const std::string &path)
     }
     
     // retrieve the directory path of the filepath
-    directory = path.substr(0, path.find_last_of('/'));
+    directory = path.substr(0, path.find_last_of("/\\"));
 
     // process ASSIMP's root node recursively
     ProcessNode(scene->mRootNode, scene);
@@ -207,16 +210,16 @@ std::vector<Texture> Model::loadMaterialTextures(aiMaterial *mat, aiTextureType 
                 skip = true; // a texture with the same filepath has already been loaded, continue to next one. (optimization)
                 break;
             }
+        }
 
-            if(!skip)
-            {   // if texture hasn't been loaded already, load it
-                Texture texture;
-                texture.id = TextureFromFile(str.C_Str(), this->directory, true);
-                texture.type = typeName;
-                texture.path = str.C_Str();
-                textures.push_back(texture);
-                texturesLoaded.push_back(texture);  // store it as texture loaded for entire model, to ensure we won't unnecessary load duplicate textures.
-            }
+        if(!skip)
+        {   // if texture hasn't been loaded already, load it
+            Texture texture;
+            texture.id = TextureFromFile(str.C_Str(), this->directory, true);
+            texture.type = typeName;
+            texture.path = str.C_Str();
+            textures.push_back(texture);
+            texturesLoaded.push_back(texture);  // store it as texture loaded for entire model, to ensure we won't unnecessary load duplicate textures.
         }
     }
     return textures;
