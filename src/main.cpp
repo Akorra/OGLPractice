@@ -6,11 +6,8 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
-#include "shader.hpp"
+#include "mesh.hpp"
 #include "camera.hpp"
-#include "geometryhelper.hpp"
-#include "materialhelper.hpp"
-#include "lightpresets.hpp"
 
 #include <glad/gl.h>
 #include <GLFW/glfw3.h>
@@ -31,9 +28,6 @@ const float        FAR_PLANE  = 100.0f;
 Camera camera(glm::vec3(0.0f, 0.0f, 3.0f));
 float  lastX = SCR_WIDTH/2.0f;  // center x
 float  lastY = SCR_HEIGHT/2.0f; // center y
-
-// window
-glm::uvec2 windowSize(SCR_WIDTH, SCR_HEIGHT); 
 
 //time
 float deltaTime = 0.0f;
@@ -81,65 +75,6 @@ int main()
     // configure global opengl state
     glEnable(GL_DEPTH_TEST);
 
-    Shader lightingShader("./shaders/2_maps.vs.glsl", "./shaders/2_multiple_lights.fs.glsl");
-    Shader lightCubeShader("./shaders/2_light.vs.glsl", "./shaders/2_light.fs.glsl");
-
-    // first, configure the cube's VAO (and VBO)
-    unsigned int VBO, cubeVAO;
-    glGenVertexArrays(1, &cubeVAO);
-    glGenBuffers(1, &VBO);
-
-    glBindVertexArray(cubeVAO);
-
-    glBindBuffer(GL_ARRAY_BUFFER, VBO);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(cube), cube, GL_STATIC_DRAW);
-
-    // position attribute
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)0);
-    glEnableVertexAttribArray(0);
-
-    // normal attribute
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(3*sizeof(float)));
-    glEnableVertexAttribArray(1);
-
-    // tex coord attribute
-    glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(6*sizeof(float)));
-    glEnableVertexAttribArray(2);
-
-    // second, configure the light's VAO (VBO stays the same; the vertices are the same for the light object which is also a 3D cube)
-    unsigned int lightCubeVAO;
-    glGenVertexArrays(1, &lightCubeVAO);
-    glBindVertexArray(lightCubeVAO);
-
-    glBindBuffer(GL_ARRAY_BUFFER, VBO);
-    // note that we update the lamp's position attribute's stride to reflect the updated buffer data
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)0);
-    glEnableVertexAttribArray(0);
-
-    glm::mat3 normalMatrix;
-    glm::mat4 projection, view, model;
-    glm::vec3 lightDirection(-0.2f, -1.0f, -0.3f), lightPosition(1.2f, 1.0f, 2.0f), lightAmbient(0.2f), lightDiffuse(0.5f), lightSpecular(1.0f);
-
-    // load textures
-    Material  diffuseMaterial;
-    diffuseMaterial.loadTexture(diffuseMaterial.diffuseMapId, "./textures/container2.png");
-    diffuseMaterial.loadTexture(diffuseMaterial.specularMapId, "./textures/container2_specular.png");
-    diffuseMaterial.loadTexture(diffuseMaterial.emissionMapId, "./textures/matrix.jpg");
-
-    LightEnv env = LightPresets::BIOCHEMICAL_LAB;
-
-    // shader config
-    lightingShader.use();
-    lightingShader.setInt("material.diffuse",  0);
-    lightingShader.setInt("material.specular", 1);
-    lightingShader.setInt("material.emission", 2);
-    lightingShader.setFloat("material.shininess", diffuseMaterial.shininess);
-
-    // add static lights:
-    lightingShader.addDirectionalLight("dirLight", &env.directionalLight);
-    for(int i=0; i<4; ++i)
-        lightingShader.addPointLight("pointLights[" + std::to_string(i) + "]", &(env.pointLights[i]));
-
     // render loop
     unsigned int i=0;
     while (!glfwWindowShouldClose(window))
@@ -153,68 +88,14 @@ int main()
         processInput(window);
 
         // render
-        glClearColor(env.clearColor.x, env.clearColor.y, env.clearColor.z, 1.0f);
+        glClearColor(0.05f, 0.05f, 0.05f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-
-        // be sure to activate shader when setting uniforms/drawing objects
-        lightingShader.use();
-        lightingShader.setFloat3("viewPosition", camera.position);
-        lightingShader.setFloat("pulse", 0.5f + sin(75.f*glm::radians(glfwGetTime()))*0.5f);
-
-        env.spotLight.position = camera.position;
-        env.spotLight.direction = camera.front;
-        lightingShader.addSpotLight("spotLight", &(env.spotLight));
-
-        // view/projection/world transformations
-        projection   = glm::perspective(glm::radians(camera.zoom), (float)SCR_WIDTH / (float)SCR_HEIGHT, NEAR_PLANE, FAR_PLANE);
-        view         = camera.GetViewMatrix();
-        model        = glm::mat4(1.0f);
-        normalMatrix = glm::mat3(glm::transpose(glm::inverse(model)));
-        lightingShader.setMat4("projection",   projection);
-        lightingShader.setMat4("view",         view);
-        lightingShader.setMat3("normalMatrix", normalMatrix);
-
-        diffuseMaterial.use();
-
-        // render the cubes
-        glBindVertexArray(cubeVAO);
-        for(unsigned int i=0; i<10; ++i)
-        {
-            lightingShader.setMat4("model", 
-                glm::rotate(glm::translate(model, cubePositions[i]), glm::radians(20.0f*i), glm::vec3(1.0f, 0.3f, 0.5f)));
-            glDrawArrays(GL_TRIANGLES, 0, cubeVertCount);
-        }
-
-        // also draw the lamp object
-        lightCubeShader.use();
-        lightCubeShader.setMat4("projection", projection);
-        lightCubeShader.setMat4("view", view); 
-
-        glBindVertexArray(lightCubeVAO);
-        for(unsigned int i=0; i<4; ++i)
-        {
-            lightCubeShader.setFloat3("light.ambient",  env.pointLights[i].ambient);
-            lightCubeShader.setFloat3("light.diffuse",  env.pointLights[i].diffuse);
-            lightCubeShader.setFloat3("light.specular", env.pointLights[i].specular);
-            
-            model = glm::mat4(1.0f);
-            model = glm::translate(model,  env.pointLights[i].position);
-            model = glm::scale(model, glm::vec3(0.2f)); // a smaller cube
-            
-            lightCubeShader.setMat4("model", model);
-
-            glDrawArrays(GL_TRIANGLES, 0, cubeVertCount);
-        }
 
         // glfw: swap buffers and poll IO events (keys pressed/released, mouse moved etc.)
         glfwSwapBuffers(window);
         glfwPollEvents();
     }
-
-    // optional: de-allocate all resources once they've outlived their purpose:
-    glDeleteVertexArrays(1, &cubeVAO);
-    glDeleteBuffers(1, &VBO);
 
     glfwTerminate();
     return 0;
@@ -239,7 +120,6 @@ void framebuffer_size_callback(GLFWwindow* window, int width, int height)
 {
     // make sure the viewport matches the new window dimensions; note that width and 
     // height will be significantly larger than specified on retina displays.
-    windowSize = {width, height};
     glViewport(0, 0, width, height);
 }
 
