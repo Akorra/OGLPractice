@@ -35,7 +35,7 @@ struct Texture
 class Mesh
 {
 public:
-    Mesh(std::vector<Vertex> v, std::vector<uint32_t> i, std::vector<Texture>&& t) 
+    Mesh(std::vector<Vertex> v, std::vector<uint32_t> i, std::vector<Texture> t) 
         : vertices(std::move(v)), indices(std::move(i)), textures(std::move(t)) { setupMesh(); }
     ~Mesh() = default;
 

@@ -10,6 +10,7 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 add_executable(oglpractice
     src/main.cpp
     src/shader.cpp
+    src/model.cpp
 )
 
 target_include_directories(oglpractice PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include)
