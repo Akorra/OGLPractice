@@ -128,6 +128,7 @@ int main()
 
     DirectionalLight dirlight; // use defaults
     PointLight       pointlights[4]; // also build defaults
+    SpotLight        flashLight;
 
     // change spotlight positions
     for(int i=0; i<4; ++i)
@@ -167,6 +168,10 @@ int main()
         lightingShader.use();
         lightingShader.setFloat3("viewPosition", camera.position);
         //lightingShader.setFloat("mixer", 0.0f);//0.7f + sin(75.f*glm::radians(glfwGetTime()))*0.3f);
+
+        flashLight.position = camera.position;
+        flashLight.direction = camera.front;
+        lightingShader.addSpotLight("spotLight", &flashLight);
 
         // view/projection/world transformations
         projection   = glm::perspective(glm::radians(camera.zoom), (float)SCR_WIDTH / (float)SCR_HEIGHT, NEAR_PLANE, FAR_PLANE);

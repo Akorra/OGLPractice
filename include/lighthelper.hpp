@@ -37,7 +37,7 @@ struct SpotLight
     float quadratic = 0.032f; 
 
     float innerCutoff = glm::cos(glm::radians(12.5f));
-    float outerCutoff = glm::cos(glm::radians(15.0f));
+    float outerCutoff = glm::cos(glm::radians(17.5f));
 };
 
 inline constexpr glm::vec3 pointLightPositions[] = {
