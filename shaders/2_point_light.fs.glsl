@@ -32,40 +32,28 @@ uniform vec3  viewPosition;
 
 void main()
 {
-    //ambient 
-    vec3 ambient = light.ambient * texture(material.diffuse, TexCoords).rgb;
-
-    vec3 lightDir = normalize(light.position - FragPosition); 
-
-    // check if lighting is inside the spotlight cone
-    float theta = dot(lightDir, normalize(-light.direction));
-
-    if(theta <= light.cutoff) // remember that we're working with angles as cosines instead of degrees so a '<' is used.
-    {
-        FragColor = vec4(ambient, 1.0);
-        return;
-    }
-
-    //diffuse
-    vec3  norm = normalize(Normal);
-    float diff = max(dot(norm, lightDir));
-    vec3  diffuse = light.diffuse * diff * texture(material.diffuse, TexCoords).rgb;
-
-    //specular
-    vec3  viewDir       = normalize(viewPosition - FragPosition);
-    vec3  reflectionDir = reflect(-lightDir, norm);
-    float spec          = pow(max(dot(viewDir, reflectionDir), 0.0f), material.shininess);
-    vec3  specular      = light.specular * spec * texture(material.specular, TexCoords).rgb;
-
     // atenuation
     float distance    = length(light.position - FragPosition);
     float attenuation = 1.0 / (light.constant + light.linear * distance + light.quadratic * (distance * distance)); 
 
+    vec3 ambient = light.ambient * texture(material.diffuse, TexCoords).rgb * attenuation;
+
+    // diffuse
+    vec3 norm = normalize(Normal);
+    vec3 lightDir = normalize(light.position - FragPosition); 
+    float diff = max(dot(norm, lightDir), 0.0);
+    vec3 diffuseSample = texture(material.diffuse, TexCoords).rgb;
+    vec3 diffuse       = light.diffuse * diff * diffuseSample * attenuation;
+
+    // specular
+    vec3 viewDir = normalize(viewPosition - FragPosition); 
+    vec3 reflectionDir = reflect(-lightDir, norm); 
+    float spec = pow(max(dot(viewDir, reflectionDir), 0.0), material.shininess); 
+    vec3 specularSample =  texture(material.specular, TexCoords).rgb; 
+    vec3 specular       =  light.specular * spec * specularSample * attenuation; 
+
     // emmission
     vec3 emission = step(specularSample, vec3(0.0)) * mixer * texture(material.emission, TexCoords).rgb;
-
-    diffuse  *= attenuation;
-    specular *= attenuation;
 
     // add light contributes 
     vec3 result = ambient + diffuse + specular + emission;

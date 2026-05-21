@@ -80,7 +80,7 @@ int main()
     // configure global opengl state
     glEnable(GL_DEPTH_TEST);
 
-    Shader lightingShader("./shaders/2_maps.vs.glsl", "./shaders/2_spot_light.fs.glsl");
+    Shader lightingShader("./shaders/2_maps.vs.glsl", "./shaders/2_smooth_spot_light.fs.glsl");
     Shader lightCubeShader("./shaders/2_light.vs.glsl", "./shaders/2_light.fs.glsl");
 
     // first, configure the cube's VAO (and VBO)
@@ -159,6 +159,7 @@ int main()
         lightingShader.setFloat3("light.position",    camera.position);
         lightingShader.setFloat3("light.direction",   camera.front);
         lightingShader.setFloat("light.cutoff",       glm::cos(glm::radians(12.5f)));
+        lightingShader.setFloat("light.outerCutoff",  glm::cos(glm::radians(17.5f)));
         lightingShader.setFloat3("light.ambient",     lightAmbient);
         lightingShader.setFloat3("light.diffuse",     lightDiffuse);
         lightingShader.setFloat3("light.specular",    lightSpecular);

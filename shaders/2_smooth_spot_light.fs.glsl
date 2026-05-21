@@ -17,7 +17,8 @@ uniform Material material;
 struct Light {
     vec3  position;
     vec3  direction;
-    float cutoff; //< spotlight radius angle
+    float cutoff; 
+    float outerCutoff; 
 
     vec3 ambient;
     vec3 diffuse;
@@ -42,11 +43,14 @@ void main()
     // check if lighting is inside the spotlight cone
     float theta = dot(lightDir, normalize(-light.direction));
 
-    if(theta <= light.cutoff) // remember that we're working with angles as cosines instead of degrees so a '<' is used.
+    if(theta <= light.outerCutoff) // remember that we're working with angles as cosines instead of degrees so a '<' is used.
     {
         FragColor = vec4(ambient, 1.0);
         return;
     }
+
+    float epsilon = light.cutoff - light.outerCutoff;
+    float intensity = clamp((theta - light.outerCutoff) / epsilon, 0.0, 1.0);
 
     //diffuse
     vec3  norm = normalize(Normal);
@@ -66,8 +70,8 @@ void main()
     // emmission
     vec3 emission = step(specular, vec3(0.0)) * mixer * texture(material.emission, TexCoords).rgb;
 
-    diffuse  *= attenuation;
-    specular *= attenuation;
+    diffuse  *= attenuation * intensity;
+    specular *= attenuation * intensity;
 
     // add light contributes 
     vec3 result = ambient + diffuse + specular + emission;
