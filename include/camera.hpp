@@ -4,19 +4,14 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
-enum CameraMovement {
-    FORWARD,
-    BACKWARD,
-    LEFT,
-    RIGHT
-};
+enum CameraMovement { FORWARD, BACKWARD, LEFT, RIGHT };
 
 // defaults
-const float YAW = -90.0f;
-const float PITCH = 0.0f;
-const float SPEED = 2.5f;
-const float SENSITIVITY = 0.5f;
-const float ZOOM = 45.0f;
+inline constexpr float YAW         = -90.0f;
+inline constexpr float PITCH       = 0.0f;
+inline constexpr float SPEED       = 2.5f;
+inline constexpr float SENSITIVITY = 0.5f;
+inline constexpr float ZOOM        = 45.0f;
 
 class Camera 
 {
