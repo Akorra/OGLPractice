@@ -18,5 +18,5 @@ add_subdirectory(chapters/AdvancedOpenGL/1_DepthTesting)
 add_subdirectory(chapters/AdvancedOpenGL/2_StencilTesting)
 add_subdirectory(chapters/AdvancedOpenGL/3_Blending)
 add_subdirectory(chapters/AdvancedOpenGL/4_FaceCulling)
-
+add_subdirectory(chapters/AdvancedOpenGL/5_Framebuffers)
 
