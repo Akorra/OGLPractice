@@ -45,23 +45,6 @@ bool firstMouse = true;
 float deltaTime = 0.0f;
 float lastFrame = 0.0f;
 
-//Tests To Perform:
-bool stencilTest=false;
-bool blendingTest=false;
-bool cullTest=true; 
-
-/**
- * Outline via stencil and depth testing:
- * 1. Enable stencil writing.
- * 2. Set the stencil op to GL_ALWAYS before drawing the (to be outlined) objects, updating the stencil buffer with 1s wherever the objects' fragments are rendered.
- * 3. Render the objects.
- * 4. Disable stencil writing and depth testing.
- * 5. Scale each of the objects by a small amount.
- * 6. Use a different fragment shader that outputs a single (border) color.
- * 7. Draw the objects again, but only if their fragments' stencil values are not equal to 1.
- * 8. Enable depth testing again and restore stencil func to GL_KEEP.
- */
-
 int main()
 {
     // glfw: initialize and configure
@@ -101,29 +84,11 @@ int main()
     glEnable(GL_DEPTH_TEST);
     glDepthFunc(GL_LESS);
 
-    if(stencilTest)
-    {
-        glEnable(GL_STENCIL_TEST);
-        glStencilFunc(GL_NOTEQUAL, 1, 0xFF);
-        glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
-    }
-
-    if(blendingTest)
-    {
-        glEnable(GL_BLEND);
-        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-    }
-
-    if(cullTest)
-    {
-        glEnable(GL_CULL_FACE);
-        glCullFace(GL_BACK);
-        glFrontFace(GL_CW); //< reverse front face assumption
-    }
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
     // build and compile shaders
     Shader shader("./shaders/base.vs.glsl", "./shaders/stencilTesting.fs.glsl");
-    Shader shaderOutline("./shaders/base.vs.glsl", "./shaders/stencilTestingColor.fs.glsl");
     Shader shaderTransparent("./shaders/base.vs.glsl", "./shaders/blending.fs.glsl");
     
     // cube vao
@@ -197,8 +162,6 @@ int main()
     glm::mat4 projection(1.0f), view(1.0f), model(1.0f);
 
     // render loop
-    auto clearFlags = (stencilTest ? GL_STENCIL_BUFFER_BIT : 0x000000000) | GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT;
-
     while (!glfwWindowShouldClose(window))
     {
         // per-frame time logic
@@ -211,33 +174,22 @@ int main()
 
         // render
         glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
-        glClear(clearFlags);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         //set uniforms
         view = camera.GetViewMatrix();
         projection = glm::perspective(glm::radians(camera.zoom), (float)SCR_WIDTH / (float)SCR_HEIGHT, NEAR_PLANE, FAR_PLANE);
-        
-        
-        shaderTransparent.use();
-        shaderTransparent.setMat4("projection", projection);
-        shaderTransparent.setMat4("view",       view);
 
         shader.use();
         shader.setMat4("projection", projection);
         shader.setMat4("view",       view);
 
-        // draw floor as normal, but don't write the floor to the stencil buffer, we only care about the containers. We set its mask to 0x00 to not write to the stencil buffer.
-        glStencilMask(0x00);
         // floor
         glBindVertexArray(planeVAO);
         glBindTexture(GL_TEXTURE_2D, floorTexture);
         shader.setMat4("model", glm::mat4(1.0f));
         glDrawArrays(GL_TRIANGLES, 0, 6);
         glBindVertexArray(0);
-
-        // 1st. render pass, draw objects as normal, writing to the stencil buffer
-        glStencilFunc(GL_ALWAYS, 1, 0xFF);
-        glStencilMask(0xFF);
 
         // cubes
         glBindVertexArray(cubeVAO);
@@ -251,53 +203,20 @@ int main()
         model = glm::translate(glm::mat4(1.0f), glm::vec3(2.0f, 0.01f, 0.0f));
         shader.setMat4("model", model);
         glDrawArrays(GL_TRIANGLES, 0, cubeVertCount);
-        
-        if(stencilTest)
+
+        // Blending (rendering ordered array of transparent objects) ------------
+        shaderTransparent.use();
+        shaderTransparent.setMat4("projection", projection);
+        shaderTransparent.setMat4("view",       view);
+
+        glBindVertexArray(vegetationVAO);
+        glBindTexture(GL_TEXTURE_2D, windowTexture);
+        // draw instances
+        for(const auto& window : sorted)
         {
-            // 2nd. render pass: now draw slightly scaled versions of the objects, this time disabling stencil writing.
-            // Because the stencil buffer is now filled with several 1s. The parts of the buffer that are 1 are not drawn, thus only drawing 
-            // the objects' size differences, making it look like borders.
-            glStencilFunc(GL_NOTEQUAL, 1, 0xFF);
-            glStencilMask(0x00);
-            glDisable(GL_DEPTH_TEST);
-
-            shaderOutline.use();
-            shaderOutline.setMat4("projection", projection);
-            shaderOutline.setMat4("view",       view);
-
-            float scale = 1.1f;
-
-            // cubes
-            glBindVertexArray(cubeVAO);
-            glBindTexture(GL_TEXTURE_2D, cubeTexture);
-            // cube 1
-            model = glm::scale(glm::translate(glm::mat4(1.0f), glm::vec3(-1.0f, 0.01f, -1.0f)), glm::vec3(scale));
-            shaderOutline.setMat4("model", model);
-            glDrawArrays(GL_TRIANGLES, 0, cubeVertCount);
-            //cube 2
-            model = glm::scale(glm::translate(glm::mat4(1.0f), glm::vec3(2.0f, 0.01f, 0.0f)), glm::vec3(scale));
-            shaderOutline.setMat4("model", model);
-            glDrawArrays(GL_TRIANGLES, 0, cubeVertCount);
-
-            glStencilMask(0xFF);
-            glStencilFunc(GL_ALWAYS, 0, 0xFF);
-            glEnable(GL_DEPTH_TEST);
-        }
-
-        if(blendingTest)
-        {
-            // 3. Blending (rendering ordered array of transparent objects) ------------
-            shaderTransparent.use();
-
-            glBindVertexArray(vegetationVAO);
-            glBindTexture(GL_TEXTURE_2D, windowTexture);
-            // draw instances
-            for(const auto& window : sorted)
-            {
-                model = glm::translate(glm::mat4(1.0f), window.second);
-                shaderTransparent.setMat4("model", model);
-                glDrawArrays(GL_TRIANGLES, 0, quadVertCount);
-            }
+            model = glm::translate(glm::mat4(1.0f), window.second);
+            shaderTransparent.setMat4("model", model);
+            glDrawArrays(GL_TRIANGLES, 0, quadVertCount);
         }
 
         glBindVertexArray(0);
