@@ -117,43 +117,9 @@ int main()
     glEnableVertexAttribArray(1);
     glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5*sizeof(float), (void*)(3*sizeof(float)));
 
-    // grass vao
-    uint32_t vegetationVAO, vegetationVBO;
-    glGenVertexArrays(1, &vegetationVAO);
-    glGenBuffers(1, &vegetationVBO);
-    // upload
-    glBindVertexArray(vegetationVAO);
-    glBindBuffer(GL_ARRAY_BUFFER, vegetationVBO);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(quad), &quad, GL_STATIC_DRAW);
-    glEnableVertexAttribArray(0);
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5*sizeof(float), (void*)0);
-    glEnableVertexAttribArray(1);
-    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5*sizeof(float), (void*)(3*sizeof(float)));
-
-    glBindVertexArray(0);
-
     // load textures
     uint32_t cubeTexture  = loadTexture("./resources/textures/container2.png");
     uint32_t floorTexture = loadTexture("./resources/textures/wall.jpg");
-
-    std::vector<glm::vec3> windows = {
-        { -1.0f,  0.0f, -0.48f },
-        {  2.0f,  0.0f,  0.51f },  
-        {  0.0f,  0.0f,  0.7f  },
-        { -0.3f,  0.0f, -2.3f  },
-        {  0.5f,  0.0f, -0.6f  }
-    };
-
-    std::vector<std::pair<float, glm::vec3>> sorted;
-    sorted.reserve(windows.size());
-    for(auto& pos : windows)
-        sorted.emplace_back(glm::length2(camera.position - pos), pos); //lets steal positions
-    
-    // if a fragment of a foreground object is renderered first, a background onject fragment will fail depth testing and get discarded instead of used by blending
-    std::sort(sorted.begin(), sorted.end(), [](const auto& a, const auto& b) {  return a.first > b.first; }) ;
-
-    // draw in wireframe
-    //glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
     shader.use();
     shader.setInt("texture1", 0);
@@ -177,7 +143,7 @@ int main()
         //set uniforms
         view = camera.GetViewMatrix();
         projection = glm::perspective(glm::radians(camera.zoom), (float)SCR_WIDTH / (float)SCR_HEIGHT, NEAR_PLANE, FAR_PLANE);
-        
+
         shader.use();
         shader.setMat4("projection", projection);
         shader.setMat4("view",       view);
@@ -190,6 +156,7 @@ int main()
         shader.setMat4("model", glm::mat4(1.0f));
         glDrawArrays(GL_TRIANGLES, 0, 6);
         glBindVertexArray(0);
+
 
         // cubes
         glBindVertexArray(cubeVAO);
