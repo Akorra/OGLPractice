@@ -5,6 +5,7 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
+#include <glm/gtx/norm.hpp>
 
 //#define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
@@ -16,6 +17,9 @@
 
 #include <glad/gl.h>
 #include <GLFW/glfw3.h>
+
+#include <vector>
+#include <algorithm>
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 void mouse_callback(GLFWwindow* window, double xpos, double ypos);
@@ -42,6 +46,18 @@ bool firstMouse = true;
 //time
 float deltaTime = 0.0f;
 float lastFrame = 0.0f;
+
+/**
+ * Outline via stencil and depth testing:
+ * 1. Enable stencil writing.
+ * 2. Set the stencil op to GL_ALWAYS before drawing the (to be outlined) objects, updating the stencil buffer with 1s wherever the objects' fragments are rendered.
+ * 3. Render the objects.
+ * 4. Disable stencil writing and depth testing.
+ * 5. Scale each of the objects by a small amount.
+ * 6. Use a different fragment shader that outputs a single (border) color.
+ * 7. Draw the objects again, but only if their fragments' stencil values are not equal to 1.
+ * 8. Enable depth testing again and restore stencil func to GL_KEEP.
+ */
 
 int main()
 {
@@ -84,10 +100,13 @@ int main()
     glEnable(GL_STENCIL_TEST);
     glStencilFunc(GL_NOTEQUAL, 1, 0xFF);
     glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
     // build and compile shaders
-    Shader shader("./shaders/stencilTesting.vs.glsl", "./shaders/stencilTesting.fs.glsl");
-    Shader shaderOutline("./shaders/stencilTesting.vs.glsl", "./shaders/stencilTestingColor.fs.glsl");
+    Shader shader("./shaders/base.vs.glsl", "./shaders/stencilTesting.fs.glsl");
+    Shader shaderOutline("./shaders/base.vs.glsl", "./shaders/stencilTestingColor.fs.glsl");
+    Shader shaderTransparent("./shaders/base.vs.glsl", "./shaders/blending.fs.glsl");
     
     // cube vao
     uint32_t cubeVAO, cubeVBO;
@@ -115,11 +134,41 @@ int main()
     glEnableVertexAttribArray(1);
     glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5*sizeof(float), (void*)(3*sizeof(float)));
 
+    // grass vao
+    uint32_t vegetationVAO, vegetationVBO;
+    glGenVertexArrays(1, &vegetationVAO);
+    glGenBuffers(1, &vegetationVBO);
+    // upload
+    glBindVertexArray(vegetationVAO);
+    glBindBuffer(GL_ARRAY_BUFFER, vegetationVBO);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(quad), &quad, GL_STATIC_DRAW);
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5*sizeof(float), (void*)0);
+    glEnableVertexAttribArray(1);
+    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5*sizeof(float), (void*)(3*sizeof(float)));
+
     glBindVertexArray(0);
 
     // load textures
     uint32_t cubeTexture  = loadTexture("./resources/textures/container2.png");
     uint32_t floorTexture = loadTexture("./resources/textures/wall.jpg");
+    uint32_t windowTexture = loadTexture("./resources/textures/blending_transparent_window.png");
+
+    std::vector<glm::vec3> windows = {
+        { -1.0f,  0.0f, -0.48f },
+        {  2.0f,  0.0f,  0.51f },  
+        {  0.0f,  0.0f,  0.7f  },
+        { -0.3f,  0.0f, -2.3f  },
+        {  0.5f,  0.0f, -0.6f  }
+    };
+
+    std::vector<std::pair<float, glm::vec3>> sorted;
+    sorted.reserve(windows.size());
+    for(auto& pos : windows)
+        sorted.emplace_back(glm::length2(camera.position - pos), pos); //lets steal positions
+    
+    // if a fragment of a foreground object is renderered first, a background onject fragment will fail depth testing and get discarded instead of used by blending
+    std::sort(sorted.begin(), sorted.end(), [](const auto& a, const auto& b) {  return a.first > b.first; }) ;
 
     // draw in wireframe
     //glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
@@ -151,6 +200,10 @@ int main()
         shaderOutline.use();
         shaderOutline.setMat4("projection", projection);
         shaderOutline.setMat4("view",       view);
+
+        shaderTransparent.use();
+        shaderTransparent.setMat4("projection", projection);
+        shaderTransparent.setMat4("view",       view);
 
         shader.use();
         shader.setMat4("projection", projection);
@@ -190,7 +243,6 @@ int main()
         glDisable(GL_DEPTH_TEST);
 
         shaderOutline.use();
-
         float scale = 1.1f;
 
         // cubes
@@ -205,11 +257,23 @@ int main()
         shaderOutline.setMat4("model", model);
         glDrawArrays(GL_TRIANGLES, 0, cubeVertCount);
 
-        glBindVertexArray(0);
-
         glStencilMask(0xFF);
         glStencilFunc(GL_ALWAYS, 0, 0xFF);
         glEnable(GL_DEPTH_TEST);
+
+        shaderTransparent.use();
+
+        glBindVertexArray(vegetationVAO);
+        glBindTexture(GL_TEXTURE_2D, windowTexture);
+        // draw instances
+        for(const auto& window : sorted)
+        {
+            model = glm::translate(glm::mat4(1.0f), window.second);
+            shaderTransparent.setMat4("model", model);
+            glDrawArrays(GL_TRIANGLES, 0, quadVertCount);
+        }
+
+        glBindVertexArray(0);
 
         // glfw: swap buffers and poll IO events (keys pressed/released, mouse moved etc.)
         glfwSwapBuffers(window);
@@ -282,6 +346,8 @@ uint32_t loadTexture(char const *path)
     uint32_t textureID;
     glGenTextures(1, &textureID);
 
+    stbi_set_flip_vertically_on_load(true);
+
     int width, height, nrComponents;
     unsigned char *data = stbi_load(path, &width, &height, &nrComponents, 0);
     if (data)
@@ -298,8 +364,9 @@ uint32_t loadTexture(char const *path)
         glTexImage2D(GL_TEXTURE_2D, 0, format, width, height, 0, format, GL_UNSIGNED_BYTE, data);
         glGenerateMipmap(GL_TEXTURE_2D);
 
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+        auto texParam = (format == GL_RGBA) ? GL_CLAMP_TO_EDGE : GL_REPEAT;
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, texParam);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, texParam);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
