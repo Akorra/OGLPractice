@@ -43,6 +43,18 @@ bool firstMouse = true;
 float deltaTime = 0.0f;
 float lastFrame = 0.0f;
 
+/**
+ * Outline via stencil and depth testing:
+ * 1. Enable stencil writing.
+ * 2. Set the stencil op to GL_ALWAYS before drawing the (to be outlined) objects, updating the stencil buffer with 1s wherever the objects' fragments are rendered.
+ * 3. Render the objects.
+ * 4. Disable stencil writing and depth testing.
+ * 5. Scale each of the objects by a small amount.
+ * 6. Use a different fragment shader that outputs a single (border) color.
+ * 7. Draw the objects again, but only if their fragments' stencil values are not equal to 1.
+ * 8. Enable depth testing again and restore stencil func to GL_KEEP.
+ */
+
 int main()
 {
     // glfw: initialize and configure
