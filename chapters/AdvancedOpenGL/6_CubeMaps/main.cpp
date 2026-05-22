@@ -85,6 +85,8 @@ int main()
     glEnable(GL_DEPTH_TEST);
 
     Shader boxShader("./shaders/advancedogl/6/simple.vs.glsl", "./shaders/advancedogl/6/simple.fs.glsl");
+    Shader reflectShader("./shaders/advancedogl/6/reflect.vs.glsl", "./shaders/advancedogl/6/reflect.fs.glsl");
+    Shader refractShader("./shaders/advancedogl/6/reflect.vs.glsl", "./shaders/advancedogl/6/refract.fs.glsl");
     Shader skyboxShader("./shaders/advancedogl/6/skybox.vs.glsl", "./shaders/advancedogl/6/skybox.fs.glsl");
 
     // box:
@@ -112,7 +114,7 @@ int main()
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3*sizeof(float), (void*)0);
 
     //load textures
-    uint32_t crateTex_diffuse   = loadTexture("./resources/textures/container2.png");
+    uint32_t crateTex = loadTexture("./resources/textures/container2.png");
     uint32_t crateTex_specular = loadTexture("./resources/textures/container2_specular.png");
 
     std::vector<std::string> faces {
@@ -129,6 +131,12 @@ int main()
 
     // draw in wireframe, will show only 2 tryangles since we're sampling the texture attachement in a quad
     // glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+
+    reflectShader.use();
+    reflectShader.setInt("skybox", 0);
+
+    refractShader.use();
+    refractShader.setInt("skybox", 0);
 
     boxShader.use();
     boxShader.setInt("material.diffuse",  0);
@@ -162,17 +170,37 @@ int main()
         boxShader.use();
         boxShader.setMat4("view", view);
         boxShader.setMat4("projection", projection);
-        boxShader.setMat4("model", model);
-        boxShader.setMat3("normalMatrix", normalMatrix);
         boxShader.setVec3("viewPosition", camera.position);
 
         glBindVertexArray(boxVAO);
         glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, crateTex_diffuse);
-
+        glBindTexture(GL_TEXTURE_2D, crateTex);
         glActiveTexture(GL_TEXTURE0 + 1);
         glBindTexture(GL_TEXTURE_2D, crateTex_specular);
+        model = glm::translate(glm::mat4(1.0f), glm::vec3(2.0f, 0.0f, 0.0f));
+        boxShader.setMat4("model", model);
+        boxShader.setMat3("normalMatrix", glm::mat3(glm::transpose(glm::inverse(model))));
+        glDrawArrays(GL_TRIANGLES, 0, cubeVertCount);
 
+        reflectShader.use();
+        reflectShader.setMat4("view", view);
+        reflectShader.setMat4("projection", projection);
+        reflectShader.setVec3("viewPosition", camera.position);
+        reflectShader.setMat4("model", glm::mat4(1.0f));
+        reflectShader.setMat3("normalMatrix", glm::mat3(1.0f));
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_CUBE_MAP, skyboxTex);
+        glDrawArrays(GL_TRIANGLES, 0, cubeVertCount);
+        
+        refractShader.use();
+        refractShader.setMat4("view", view);
+        refractShader.setMat4("projection", projection);
+        refractShader.setVec3("viewPosition", camera.position);
+        model = glm::translate(glm::mat4(1.0f), glm::vec3(-2.0f, 0.0f, 0.0f));
+        refractShader.setMat4("model", model);
+        refractShader.setMat3("normalMatrix", glm::mat3(glm::transpose(glm::inverse(model))));
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_CUBE_MAP, skyboxTex);
         glDrawArrays(GL_TRIANGLES, 0, cubeVertCount);
         glBindVertexArray(0);
 
@@ -225,6 +253,7 @@ void framebuffer_size_callback(GLFWwindow* window, int width, int height)
 void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
 {
     mouseDown = (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS);
+    if(mouseDown) firstMouse = true;
 }
 
 void mouse_callback(GLFWwindow* window, double xposIn, double yposIn)
