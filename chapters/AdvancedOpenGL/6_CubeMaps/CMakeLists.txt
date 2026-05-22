@@ -1,0 +1,2 @@
+add_executable(05_framebuffers main.cpp)
+target_link_libraries(05_framebuffers PRIVATE ogl_common)
