@@ -1,0 +1,2 @@
+add_executable(02_stencil_testing main.cpp)
+target_link_libraries(02_stencil_testing PRIVATE ogl_common)
