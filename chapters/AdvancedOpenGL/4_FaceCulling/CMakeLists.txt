@@ -1,0 +1,2 @@
+add_executable(04_face_culling main.cpp)
+target_link_libraries(04_face_culling PRIVATE ogl_common)

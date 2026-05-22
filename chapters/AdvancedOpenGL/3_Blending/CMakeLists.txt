@@ -1,0 +1,2 @@
+add_executable(03_blending main.cpp)
+target_link_libraries(03_blending PRIVATE ogl_common)
