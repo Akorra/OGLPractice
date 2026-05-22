@@ -1,2 +1,2 @@
-add_executable(05_framebuffers main.cpp)
-target_link_libraries(05_framebuffers PRIVATE ogl_common)
+add_executable(06_cubemaps main.cpp)
+target_link_libraries(06_cubemaps PRIVATE ogl_common)

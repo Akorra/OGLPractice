@@ -10,7 +10,7 @@ enum CameraMovement { FORWARD, BACKWARD, LEFT, RIGHT };
 inline constexpr float YAW         = -90.0f;
 inline constexpr float PITCH       = 0.0f;
 inline constexpr float SPEED       = 2.5f;
-inline constexpr float SENSITIVITY = 0.5f;
+inline constexpr float SENSITIVITY = 1.0f;
 inline constexpr float ZOOM        = 45.0f;
 
 class Camera 
