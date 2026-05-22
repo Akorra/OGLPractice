@@ -1,0 +1,2 @@
+add_executable(01_depth_testing main.cpp)
+target_link_libraries(01_depth_testing PRIVATE ogl_common)
