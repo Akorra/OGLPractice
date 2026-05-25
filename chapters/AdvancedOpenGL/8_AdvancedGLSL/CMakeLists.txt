@@ -1,0 +1,2 @@
+add_executable(08_advanced_glsl main.cpp)
+target_link_libraries(08_advanced_glsl PRIVATE ogl_common)
