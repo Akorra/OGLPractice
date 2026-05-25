@@ -1,2 +1,2 @@
-add_executable(09_geometry_shader explode.cpp)
+add_executable(09_geometry_shader normals.cpp)
 target_link_libraries(09_geometry_shader PRIVATE ogl_common)
