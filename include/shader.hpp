@@ -10,7 +10,7 @@ public:
     uint32_t ID;
   
     // constructor reads and builds the shader
-    Shader(const char* vertexPath, const char* fragmentPath);
+    Shader(const char* vertexPath, const char* fragmentPath, const char* geometryPath=nullptr);
     ~Shader();
     
     // use/activate the shader
