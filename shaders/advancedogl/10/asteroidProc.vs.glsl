@@ -4,9 +4,10 @@ layout (location = 2) in vec2 aTexCoords;
 
 out vec2 TexCoords;
 
-uniform mat4 projection;
-uniform mat4 view;
-uniform int  instanceCount;
+uniform mat4  projection;
+uniform mat4  view;
+uniform int   instanceCount;
+
 
 const float radius = 150.0;
 const float offset = 25.0f;
@@ -54,7 +55,7 @@ mat4 transformAsteroid()
 {
     float id = float(gl_InstanceID);
 
-    float angle = id / float(instanceCount) * 6.28318530718;
+    float angle = (id / float(instanceCount)) * 6.28318530718;
 
     float dx = random(id * 12.9898) * 2.0 * offset - offset;
     float dy = random(id * 78.233) * 2.0 * offset - offset;
