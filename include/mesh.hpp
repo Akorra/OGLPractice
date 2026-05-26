@@ -138,10 +138,8 @@ private:
         glBindVertexArray(0);
     }
 
-private:
-    uint32_t VAO, VBO, EBO;
-
 public:
+    uint32_t VAO, VBO, EBO;
     // mesh data
     std::vector<Vertex>   vertices;
     std::vector<uint32_t> indices;
