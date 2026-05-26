@@ -86,7 +86,8 @@ int main()
     Shader planetShader("./shaders/advancedogl/10/planet.vs.glsl", "./shaders/advancedogl/10/planet.fs.glsl");
     Shader asteroidShader("./shaders/advancedogl/10/asteroidProc.vs.glsl", "./shaders/advancedogl/10/asteroidProc.fs.glsl");
 
-    int amount = 2000;
+    int amount = 100000;
+    asteroidShader.use();
     asteroidShader.setInt("instanceCount", amount);
     
     Model rock("./resources/objects/rock/rock.obj");
