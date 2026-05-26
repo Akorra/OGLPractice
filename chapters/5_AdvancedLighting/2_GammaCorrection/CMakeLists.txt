@@ -1,0 +1,2 @@
+add_executable(02_gamma_correction main.cpp)
+target_link_libraries(02_gamma_correction PRIVATE ogl_common)
