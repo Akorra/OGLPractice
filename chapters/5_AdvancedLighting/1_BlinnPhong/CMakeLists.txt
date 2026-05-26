@@ -1,0 +1,2 @@
+add_executable(01_blinn_phong main.cpp)
+target_link_libraries(01_blinn_phong PRIVATE ogl_common)
