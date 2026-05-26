@@ -31,5 +31,7 @@ public:
     void setMat4 (const std::string &name, const glm::mat4& value) const;
 
 private:
-    void checkCompileErrors(uint32_t shader, std::string type);
+    //! link shader program
+    bool link(const char * vsCode, const char * fsCode, const char * gsCode=nullptr);
+    void checkCompileErrors(uint32_t shader, std::string type) const;
 };
