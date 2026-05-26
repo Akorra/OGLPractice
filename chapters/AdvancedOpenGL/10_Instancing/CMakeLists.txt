@@ -1,0 +1,2 @@
+add_executable(10_instancing main.cpp)
+target_link_libraries(10_instancing PRIVATE ogl_common)
