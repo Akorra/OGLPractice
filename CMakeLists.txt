@@ -26,3 +26,4 @@ add_subdirectory(chapters/4_AdvancedOpenGL/10_Instancing)
 add_subdirectory(chapters/4_AdvancedOpenGL/11_AntiAliasing)
 
 add_subdirectory(chapters/5_AdvancedLighting/1_BlinnPhong)
+add_subdirectory(chapters/5_AdvancedLighting/2_GammaCorrection)
