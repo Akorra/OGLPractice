@@ -1,0 +1,2 @@
+add_executable(11_antialiasing main.cpp)
+target_link_libraries(11_antialiasing PRIVATE ogl_common)
